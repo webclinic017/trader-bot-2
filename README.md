@@ -1,2 +1,2 @@
 # trader-bot
-Algorithmic trader bot
+Algorithmic trader bot.
