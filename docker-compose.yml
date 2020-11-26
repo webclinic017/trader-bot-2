@@ -5,27 +5,23 @@ services:
     build: ./spider/
     volumes:
       - ./spider:/app
-    environment:
-      - "API_KEY=TEST"
-      - "API_SECRET=TEST"
+    env_file:
+      - ./.env
   hawkeye:
     build: ./hawkeye/
     volumes:
       - ./hawkeye:/app
-    environment:
-      - "API_KEY=TEST"
-      - "API_SECRET=TEST"
+    env_file:
+      - ./.env
   racoon:
     build: ./racoon/
     volumes:
       - ./racoon:/app
-    environment:
-      - "API_KEY=TEST"
-      - "API_SECRET=TEST"
+    env_file:
+      - ./.env
   meerkat:
     build: ./meerkat/
     volumes:
       - ./meerkat:/app
-    environment:
-      - "API_KEY=TEST"
-      - "API_SECRET=TEST"
+    env_file:
+      - ./.env
