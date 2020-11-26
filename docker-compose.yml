@@ -7,21 +7,33 @@ services:
       - ./spider:/app
     env_file:
       - ./.env
-  hawkeye:
-    build: ./hawkeye/
-    volumes:
-      - ./hawkeye:/app
+    depends_on:
+      - db
+#  hawkeye:
+#    build: ./hawkeye/
+#    volumes:
+#      - ./hawkeye:/app
+#    env_file:
+#      - ./.env
+#  racoon:
+#    build: ./racoon/
+#    volumes:
+#      - ./racoon:/app
+#    env_file:
+#      - ./.env
+#  meerkat:
+#    build: ./meerkat/
+#    volumes:
+#      - ./meerkat:/app
+#    env_file:
+#      - ./.env
+  db:
+    image: postgres:13.1
+    restart: always
     env_file:
       - ./.env
-  racoon:
-    build: ./racoon/
-    volumes:
-      - ./racoon:/app
-    env_file:
-      - ./.env
-  meerkat:
-    build: ./meerkat/
-    volumes:
-      - ./meerkat:/app
-    env_file:
-      - ./.env
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8083:8080
