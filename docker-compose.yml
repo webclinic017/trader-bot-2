@@ -1,0 +1,31 @@
+version: '3.7'
+
+services:
+  spider:
+    build: ./spider/
+    volumes:
+      - ./spider:/app
+    environment:
+      - "API_KEY=TEST"
+      - "API_SECRET=TEST"
+  hawkeye:
+    build: ./hawkeye/
+    volumes:
+      - ./hawkeye:/app
+    environment:
+      - "API_KEY=TEST"
+      - "API_SECRET=TEST"
+  racoon:
+    build: ./racoon/
+    volumes:
+      - ./racoon:/app
+    environment:
+      - "API_KEY=TEST"
+      - "API_SECRET=TEST"
+  meerkat:
+    build: ./meerkat/
+    volumes:
+      - ./meerkat:/app
+    environment:
+      - "API_KEY=TEST"
+      - "API_SECRET=TEST"
