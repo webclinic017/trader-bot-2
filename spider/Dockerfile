@@ -2,11 +2,12 @@ FROM python:3.7-slim
 
 RUN apt -y update && apt-get clean
 
-WORKDIR /app
+COPY . /spider
 
-COPY . /app
+WORKDIR /spider
 
-RUN pip install -r /app/requirements.txt \
-    rm -rf /root/.cache/pip
+RUN pip install -r /spider/requirements.txt
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
+RUN ["chmod", "+x", "./docker-entrypoint.sh"]
+
+ENTRYPOINT ["./docker-entrypoint.sh"]

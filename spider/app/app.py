@@ -1,34 +1,34 @@
 import datetime
 
 import backtrader as bt
-import backtrader.analyzers as bta
 import quantstats
 
 from app.sizers import LongOnly
 from app.strategies import CloseSMA
 
-cerebro = bt.Cerebro(optreturn=False, stdstats=True)
-cerebro.broker.setcommission(commission=0.00075)
 
-# Set data parameters and add to Cerebro
-data = bt.feeds.YahooFinanceCSVData(
-    dataname='data/BTC-USD.csv',
-    fromdate=datetime.datetime(2019, 11, 26),
-    todate=datetime.datetime(2020, 11, 26),
-)
+def run():
+    cerebro = bt.Cerebro(optreturn=False, stdstats=True)
+    cerebro.broker.setcommission(commission=0.00075)
 
-cerebro.adddata(data)
+    # Set data parameters and add to Cerebro
+    data = bt.feeds.YahooFinanceCSVData(
+        dataname='data/BTC-USD.csv',
+        fromdate=datetime.datetime(2019, 11, 26),
+        todate=datetime.datetime(2020, 11, 26),
+    )
 
-cerebro.addstrategy(CloseSMA)
+    cerebro.adddata(data)
 
-# cerebro.addanalyzer(bta.SharpeRatio, _name='mysharpe')
-cerebro.addanalyzer(bt.analyzers.PyFolio, _name='PyFolio')
+    cerebro.addstrategy(CloseSMA)
 
-cerebro.addsizer(LongOnly)
+    # cerebro.addanalyzer(bta.SharpeRatio, _name='mysharpe')
+    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='PyFolio')
 
-cerebro.addwriter(bt.WriterFile, csv=True, out='logs/log.csv')
+    cerebro.addsizer(LongOnly)
 
-if __name__ == '__main__':
+    cerebro.addwriter(bt.WriterFile, csv=True, out='logs/log.csv')
+
     start_portfolio_value = cerebro.broker.getvalue()
 
     thestrats = cerebro.run()

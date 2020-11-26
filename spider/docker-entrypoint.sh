@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
 
-cd /app
+cd /spider
+
 exec python main.py
