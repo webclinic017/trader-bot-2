@@ -38,8 +38,17 @@ class DataCollector:
             except Exception as e:
                 pass
 
-    def get_data_frame(self):
-        historical_data = (HistoricalData.select())
+    def get_data_frame(self, symbol=None, interval=None):
+
+        query = HistoricalData.select()
+
+        if symbol is not None:
+            query = query.where(HistoricalData.symbol == symbol)
+
+        if interval is not None:
+            query = query.where(HistoricalData.interval == interval)
+
+        historical_data = (query)
         dataframe = pd.DataFrame(list(historical_data.dicts()))
         dataframe = dataframe[['open_time',
                                'open',

@@ -22,9 +22,9 @@ class Spider:
         ext_db.create_tables([HistoricalData])
 
         data_collector = DataCollector(self.config)
-        klines = data_collector.fetch_klines("BTCUSDT", Client.KLINE_INTERVAL_1HOUR, "1 week ago UTC")
-        data_collector.save_klines("BTCUSDT", Client.KLINE_INTERVAL_1HOUR, klines)
-        dataframe = data_collector.get_data_frame()
+        klines = data_collector.fetch_klines("BTCUSDT", Client.KLINE_INTERVAL_5MINUTE, "3 days ago UTC", limit=1000)
+        data_collector.save_klines("BTCUSDT", Client.KLINE_INTERVAL_5MINUTE, klines)
+        dataframe = data_collector.get_data_frame(symbol="BTCUSDT", interval=Client.KLINE_INTERVAL_1DAY)
         dataframe.index = pd.to_datetime(dataframe.index, unit='s')
 
         data = bt.feeds.PandasData(dataname=dataframe, datetime='open_time')
