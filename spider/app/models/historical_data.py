@@ -1,20 +1,23 @@
-from app import db
+from peewee import *
+
+from app.db import BaseExtModel
 
 
-class HistoricalData(db.Model):
+class HistoricalData(BaseExtModel):
+    id = AutoField(primary_key=True)
+    symbol = CharField(null=False, max_length=10)
+    interval = CharField(null=False, max_length=3)
+    open = FloatField(null=False)
+    high = FloatField(null=False)
+    low = FloatField(null=False)
+    close = FloatField(null=False)
+    volume = FloatField(null=False)
+    open_time = TimestampField(null=False, utc=True)
+    close_time = TimestampField(null=False, utc=True)
+    number_of_trades = IntegerField(null=False)
+
     class Meta:
-        pk = 'id'
-        created_at = 'created_at'
-        updated_at = 'updated_at'
-
-    id = db.Column(db.Integer, primary_key=True)
-    symbol = db.Column(db.String, nullable=False)
-    interval = db.Column(db.String, nullable=False)
-    open = db.Column(db.Float, nullable=False)
-    high = db.Column(db.Float, nullable=False)
-    low = db.Column(db.Float, nullable=False)
-    close = db.Column(db.Float, nullable=False)
-    volume = db.Column(db.Float, nullable=False)
-    open_time = db.Column(db.DateTime, nullable=False)
-    close_time = db.Column(db.DateTime, nullable=False)
-    number_of_trades = db.Column(db.Integer, nullable=False)
+        table_name = 'historical_data'
+        indexes = (
+            (('symbol', 'interval', 'open_time'), True),
+        )

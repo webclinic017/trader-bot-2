@@ -1,10 +1,8 @@
-from datetime import datetime
 from os import environ
 
 from binance.client import Client
 
-from app.managers.historical_data_manager import HistoricalDataManager
-from app.models.historical_data import HistoricalData
+from app.models import HistoricalData
 
 
 class DataCollector:
@@ -17,21 +15,24 @@ class DataCollector:
 
     def fetch_klines(self, symbol, interval, start_date, end_date=None, limit=500):
         klines = self.client.get_historical_klines(symbol, interval, start_date, end_str=end_date, limit=limit)
-        print(klines)
+        return klines
 
-    def save(self):
-        instance = HistoricalDataManager().create(symbol="BTCUSDT",
-                                                  interval=Client.KLINE_INTERVAL_1HOUR,
-                                                  open=16501.1,
-                                                  high=16750.0,
-                                                  low=16465.48,
-                                                  close=16674.99,
-                                                  volume=3666.26901900,
-                                                  close_time=datetime.now(),
-                                                  open_time=datetime.now(),
-                                                  number_of_trades=63439,
-                                                  commit=True)
-        a = instance
+    def save_klines(self, symbol, interval, klines):
+        for kline in klines:
+            data = {
+                'symbol': symbol,
+                'interval': interval,
+                'open_time': kline[0],
+                'open': kline[1],
+                'high': kline[2],
+                'low': kline[3],
+                'close': kline[4],
+                'volume': kline[5],
+                'close_time': kline[6],
+                'number_of_trades': kline[8]
+            }
+
+            HistoricalData.create(**data)
 
     def queryDb(self):
         pass
@@ -50,8 +51,3 @@ class DataCollector:
         # dataframe.to_csv('test.csv', index=False)
 
         # data = bt.feeds.PandasData(dataname=dataframe)
-
-
-if __name__ == '__main__':
-    data_collector = DataCollector()
-    data_collector.fetch_klines("BTCUSDT", Client.KLINE_INTERVAL_1HOUR, "2020-11-27")

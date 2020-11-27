@@ -1,12 +1,8 @@
-import datetime
-
-import backtrader as bt
-import quantstats
 from binance.client import Client
 
 from app.binance.data_collector import DataCollector
-from app.sizers import LongOnly
-from app.strategies import CloseSMA
+from app.db import ext_db
+from app.models import HistoricalData
 
 
 class Spider:
@@ -15,14 +11,13 @@ class Spider:
         self.config = config
 
     def run(self):
-        
+        ext_db.connect()
+        ext_db.create_tables([HistoricalData])
+
         data_collector = DataCollector(self.config)
         klines = data_collector.fetch_klines("BTCUSDT", Client.KLINE_INTERVAL_1HOUR, "1 week ago UTC")
-        data_collector.save()
-        
-        
-        
-        
+        data_collector.save_klines("BTCUSDT", Client.KLINE_INTERVAL_1HOUR, klines)
+
         # cerebro = bt.Cerebro(optreturn=False, stdstats=True)
         # cerebro.broker.setcommission(commission=0.00075)
         #
@@ -63,4 +58,4 @@ class Spider:
         # print(f'Final Portfolio Value: {end_portfolio_value:2.2f}')
         # print(f'PnL: {pnl:.2f}')
 
-    # cerebro.plot()
+        # cerebro.plot()
