@@ -41,7 +41,7 @@ class Spider:
 
         cerebro.addsizer(LongOnly)
 
-        cerebro.addwriter(bt.WriterFile, csv=True, out='logs/log.csv')
+        # cerebro.addwriter(bt.WriterFile, csv=True, out='logs/log.csv')
 
         start_portfolio_value = cerebro.broker.getvalue()
 
@@ -54,7 +54,7 @@ class Spider:
         portfolio_stats = thestrat.analyzers.getbyname('PyFolio')
         returns, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
         returns.index = returns.index.tz_convert(None)
-        returns.to_csv('logs/returns.csv')
+        # returns.to_csv('logs/returns.csv')
         quantstats.reports.html(returns, output='logs/stats.html', title='CloseSMA')
 
         # print('Sharpe Ratio:', thestrat.analyzers.mysharpe.get_analysis())
