@@ -1,17 +1,13 @@
+from datetime import datetime
 from os import environ
 
 from binance.client import Client
-import backtrader as bt
-import pandas as pd
-from datetime import datetime
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
+from app.managers.historical_data_manager import HistoricalDataManager
 from app.models.historical_data import HistoricalData
 
 
-class DataCollector():
+class DataCollector:
 
     def __init__(self, config):
         self._config = config
@@ -20,20 +16,22 @@ class DataCollector():
         self.client = Client(self._api_key, self._api_secret)
 
     def fetch_klines(self, symbol, interval, start_date, end_date=None, limit=500):
-        klines = self.client.get_historical_klines(symbol, interval, start_date, end_date, limit)
+        klines = self.client.get_historical_klines(symbol, interval, start_date, end_str=end_date, limit=limit)
         print(klines)
-        
+
     def save(self):
-        HistoricalData.create(symbol="BTCUSDT",
-                              interval="1H",
-                              open=16501.1,
-                              high=16750.0,
-                              low=16465.48,
-                              close=16674.99,
-                              volume=3666.26901900,
-                              close_time=datetime.now(),
-                              open_time=datetime.now(),
-                              number_of_trades=63439)
+        instance = HistoricalDataManager().create(symbol="BTCUSDT",
+                                                  interval=Client.KLINE_INTERVAL_1HOUR,
+                                                  open=16501.1,
+                                                  high=16750.0,
+                                                  low=16465.48,
+                                                  close=16674.99,
+                                                  volume=3666.26901900,
+                                                  close_time=datetime.now(),
+                                                  open_time=datetime.now(),
+                                                  number_of_trades=63439,
+                                                  commit=True)
+        a = instance
 
     def queryDb(self):
         pass
@@ -52,9 +50,6 @@ class DataCollector():
         # dataframe.to_csv('test.csv', index=False)
 
         # data = bt.feeds.PandasData(dataname=dataframe)
-
-
-
 
 
 if __name__ == '__main__':

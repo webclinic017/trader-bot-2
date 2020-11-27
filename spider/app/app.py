@@ -2,6 +2,7 @@ import datetime
 
 import backtrader as bt
 import quantstats
+from binance.client import Client
 
 from app.binance.data_collector import DataCollector
 from app.sizers import LongOnly
@@ -16,6 +17,7 @@ class Spider:
     def run(self):
         
         data_collector = DataCollector(self.config)
+        klines = data_collector.fetch_klines("BTCUSDT", Client.KLINE_INTERVAL_1HOUR, "1 week ago UTC")
         data_collector.save()
         
         

@@ -1,22 +1,20 @@
-from sqlalchemy import Column, String, Integer, Float, DateTime
-from sqlalchemy.ext.declarative import declarative_base
-
-from app.models import BaseModel
+from app import db
 
 
-class HistoricalData(BaseModel):
-    __tablename__ = 'historical_data'
+class HistoricalData(db.Model):
+    class Meta:
+        pk = 'id'
+        created_at = 'created_at'
+        updated_at = 'updated_at'
 
-    id = Column(Integer, primary_key=True)
-    symbol = Column(String, nullable=False)
-    interval = Column(String, nullable=False)
-    open = Column(Float, nullable=False)
-    high = Column(Float, nullable=False)
-    low = Column(Float, nullable=False)
-    close = Column(Float, nullable=False)
-    volume = Column(Float, nullable=False)
-    open_time = Column(DateTime, nullable=False)
-    close_time = Column(DateTime, nullable=False)
-    number_of_trades = Column(Integer, nullable=False)
-    # symbol
-    # interval
+    id = db.Column(db.Integer, primary_key=True)
+    symbol = db.Column(db.String, nullable=False)
+    interval = db.Column(db.String, nullable=False)
+    open = db.Column(db.Float, nullable=False)
+    high = db.Column(db.Float, nullable=False)
+    low = db.Column(db.Float, nullable=False)
+    close = db.Column(db.Float, nullable=False)
+    volume = db.Column(db.Float, nullable=False)
+    open_time = db.Column(db.DateTime, nullable=False)
+    close_time = db.Column(db.DateTime, nullable=False)
+    number_of_trades = db.Column(db.Integer, nullable=False)
