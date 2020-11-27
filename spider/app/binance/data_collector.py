@@ -1,8 +1,10 @@
 from os import environ
 
+from app.models import HistoricalData
 from binance.client import Client
 
-from app.models import HistoricalData
+import pandas as pd
+import backtrader as bt
 
 
 class DataCollector:
@@ -22,32 +24,31 @@ class DataCollector:
             data = {
                 'symbol': symbol,
                 'interval': interval,
-                'open_time': kline[0],
+                'open_time': kline[0] / 1000,
                 'open': kline[1],
                 'high': kline[2],
                 'low': kline[3],
                 'close': kline[4],
                 'volume': kline[5],
-                'close_time': kline[6],
+                'close_time': kline[6] / 1000,
                 'number_of_trades': kline[8]
             }
+            try:
+                HistoricalData.get_or_create(**data)
+            except Exception as e:
+                pass
 
-            HistoricalData.create(**data)
-
-    def queryDb(self):
-        pass
-        # query = session.query(HistoricalData). \
-        #     filter(HistoricalData.symbol == 'BTCUSDT').statement
-        #
-        # dataframe = pd.read_sql(query, engine, index_col='id')
-        # dataframe = dataframe[['open',
-        #                        'high',
-        #                        'low',
-        #                        'close',
-        #                        'volume']]
-        # dataframe.columns = ['open', 'high', 'low', 'close', 'volume']
-        # dataframe['openinterest'] = 0
+    def get_data_frame(self):
+        historical_data = (HistoricalData.select())
+        dataframe = pd.DataFrame(list(historical_data.dicts()))
+        dataframe = dataframe[['open_time',
+                               'open',
+                               'high',
+                               'low',
+                               'close',
+                               'volume']]
+        dataframe.columns = ['open_time', 'open', 'high', 'low', 'close', 'volume']
+        dataframe['openinterest'] = 0
         # dataframe.sort_index(inplace=True)
         # dataframe.to_csv('test.csv', index=False)
-
-        # data = bt.feeds.PandasData(dataname=dataframe)
+        return dataframe
