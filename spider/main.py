@@ -1,4 +1,11 @@
-from app import app
+import os
+
+from app import Spider
+from config import config
 
 if __name__ == '__main__':
-    app.run()
+    env = os.getenv('ENV') or 'development'
+    conf = config[env]
+
+    peter = Spider(config=conf)
+    peter.run()
