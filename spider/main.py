@@ -9,3 +9,10 @@ if __name__ == '__main__':
 
     peter = Spider(config=conf)
     peter.run()
+
+
+# TODO
+# Backtrader'ın farkli class'a alinmasi
+# Strateji sonuclarindan rahber tablo üretilmesi
+# Veritabanindaki son verilerin guncellenmesi
+# Farklı farklı bir sürü strateji
