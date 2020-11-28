@@ -55,7 +55,7 @@ class DataCollector:
             objects = map(convert, klines)
             HistoricalData.bulk_create(objects, batch_size=500)
 
-    def get_data_frame(self, symbol=None, interval=None) -> pd.DataFrame:
+    def get_data_frame(self, symbol=None, interval=None, limit=1000) -> pd.DataFrame:
 
         query = HistoricalData.select()
 
@@ -64,6 +64,8 @@ class DataCollector:
 
         if interval is not None:
             query = query.where(HistoricalData.interval == interval)
+
+        query = query.order_by(HistoricalData.close_time.desc()).limit(limit)
 
         historical_data = (query)
         dataframe = pd.DataFrame(list(historical_data.dicts()))
