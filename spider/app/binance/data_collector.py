@@ -65,13 +65,13 @@ class DataCollector:
         if interval is not None:
             query = query.where(HistoricalData.interval == interval)
 
-        # query = query.order_by(HistoricalData.open_time.desc()).limit(limit)
+        query = query.order_by(HistoricalData.open_time.desc()).limit(limit)
         # query = query.limit(limit)
 
         historical_data = (query)
         dataframe = pd.DataFrame(list(historical_data.dicts()))
-        # dataframe = dataframe.sort_values(by=['open_time'], ascending=True, inplace=False)
-        # dataframe = dataframe.reset_index(drop=True)
+        dataframe = dataframe.sort_values(by=['open_time'], ascending=True, inplace=False)
+        dataframe = dataframe.reset_index(drop=True)
         dataframe = dataframe[['open_time',
                                'open',
                                'high',
