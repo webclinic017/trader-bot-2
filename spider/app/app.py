@@ -64,7 +64,10 @@ class Spider:
         data_collector = DataCollector(self._config)
         # data_collector.update_history()
 
-        self.run_strategy(symbol='BTCUSDT', interval=Client.KLINE_INTERVAL_15MINUTE, strategy=CloseSMA)
+        self.run_strategy(symbol='BTCUSDT',
+                          interval=Client.KLINE_INTERVAL_4HOUR,
+                          strategy=CloseSMA,
+                          plot=True)
 
     def init_logging(self):
         logformat = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
