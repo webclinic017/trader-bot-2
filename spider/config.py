@@ -9,16 +9,19 @@ class Config:
         ('BTCUSDT', '30m'),
         ('BTCUSDT', '1h'),
         ('BTCUSDT', '4h'),
+        ('BTCUSDT', '1d'),
         ('ETHUSDT', '5m'),
         ('ETHUSDT', '15m'),
         ('ETHUSDT', '30m'),
         ('ETHUSDT', '1h'),
         ('ETHUSDT', '4h'),
+        ('ETHUSDT', '1d'),
         ('IOTAUSDT', '5m'),
         ('IOTAUSDT', '15m'),
         ('IOTAUSDT', '30m'),
         ('IOTAUSDT', '1h'),
         ('IOTAUSDT', '4h'),
+        ('IOTAUSDT', '1d'),
     )
 
 
