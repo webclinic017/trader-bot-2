@@ -1,5 +1,6 @@
 import pandas as pd
 import quantstats
+import logging
 from binance.client import Client
 
 from app.binance.data_collector import DataCollector
@@ -15,9 +16,11 @@ from app.strategies import CloseSMA
 class Spider:
 
     def __init__(self, config):
-        self.config = config
+        self._config = config
 
     def run(self):
+        self.init_logging()
+
         ext_db.connect()
         ext_db.create_tables([HistoricalData])
 
@@ -63,3 +66,12 @@ class Spider:
         print(f'PnL: {pnl:.2f}')
 
         cerebro.plot()
+
+    def init_logging(self):
+
+        logformat='%(asctime)s %(levelname)s: %(message)s'
+
+        if self._config.DEBUG:
+            logging.basicConfig(format=logformat, level=logging.DEBUG)
+        else:
+            logging.basicConfig(format=logformat, level=logging.WARN)
