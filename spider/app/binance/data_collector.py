@@ -89,7 +89,7 @@ class DataCollector:
             close_time = self.get_latest_close_time(symbol, interval)
 
             if close_time is None:
-                start_date = '2 weeks ago UTC'
+                start_date = '1 year ago UTC'
                 self.logger.info(f"Couldn't find data for {symbol} ({interval}). Will download from {start_date}")
             else:
                 start_date = close_time.isoformat()
