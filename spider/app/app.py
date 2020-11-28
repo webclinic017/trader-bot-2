@@ -2,18 +2,18 @@ import pandas as pd
 import quantstats
 import logging
 from binance.client import Client
+import backtrader as bt
 
 from app.binance.data_collector import DataCollector
 from app.db import ext_db
 from app.models import HistoricalData
-
-import backtrader as bt
 
 from app.sizers import LongOnly
 from app.strategies import CloseSMA
 
 
 class Spider:
+    logger = logging.getLogger(__name__)
 
     def __init__(self, config):
         self._config = config
@@ -24,9 +24,9 @@ class Spider:
         ext_db.connect()
         ext_db.create_tables([HistoricalData])
 
-        data_collector = DataCollector(self.config)
-        klines = data_collector.fetch_klines("BTCUSDT", Client.KLINE_INTERVAL_5MINUTE, "3 days ago UTC", limit=1000)
-        data_collector.save_klines("BTCUSDT", Client.KLINE_INTERVAL_5MINUTE, klines)
+        data_collector = DataCollector(self._config)
+        data_collector.update_history()
+
         dataframe = data_collector.get_data_frame(symbol="BTCUSDT", interval=Client.KLINE_INTERVAL_1DAY)
         dataframe.index = pd.to_datetime(dataframe.index, unit='s')
 
@@ -68,10 +68,9 @@ class Spider:
         cerebro.plot()
 
     def init_logging(self):
+        logformat = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
 
-        logformat='%(asctime)s %(levelname)s: %(message)s'
+        logging.basicConfig(format=logformat, level=logging.WARNING)
 
         if self._config.DEBUG:
-            logging.basicConfig(format=logformat, level=logging.DEBUG)
-        else:
-            logging.basicConfig(format=logformat, level=logging.WARN)
+            logging.getLogger('app').setLevel(logging.DEBUG)

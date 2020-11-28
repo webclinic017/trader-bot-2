@@ -3,6 +3,23 @@ import os
 
 class Config:
     pass
+    SYMBOL_INTERVAL_PAIRS = (
+        ('BTCUSDT', '5m'),
+        ('BTCUSDT', '15m'),
+        ('BTCUSDT', '30m'),
+        ('BTCUSDT', '1h'),
+        ('BTCUSDT', '4h'),
+        ('ETHUSDT', '5m'),
+        ('ETHUSDT', '15m'),
+        ('ETHUSDT', '30m'),
+        ('ETHUSDT', '1h'),
+        ('ETHUSDT', '4h'),
+        ('IOTAUSDT', '5m'),
+        ('IOTAUSDT', '15m'),
+        ('IOTAUSDT', '30m'),
+        ('IOTAUSDT', '1h'),
+        ('IOTAUSDT', '4h'),
+    )
 
 
 class DevelopmentConfig(Config):
