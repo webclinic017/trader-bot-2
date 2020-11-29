@@ -37,9 +37,9 @@ class MAcrossover(bt.Strategy):
         # Attention: broker could reject order if not enough cash
         if order.status in [order.Completed]:
             if order.isbuy():
-                self.log(f'BUY EXECUTED, Size: {self.order.executed.size:.2f}, Price: {self.order.executed.price:.2f}, Cost: {self.order.executed.value:.2f}')
+                self.log(f'BUY EXECUTED, Size: {self.order.executed.size:.8f}, Price: {self.order.executed.price:.5f}, Cost: {self.order.executed.value:.2f}')
             elif order.issell():
-                self.log(f'SELL EXECUTED, Size: {self.order.executed.size:.2f}, Price: {self.order.executed.price:.2f}, Cost: {self.order.executed.value:.2f}')
+                self.log(f'SELL EXECUTED, Size: {self.order.executed.size:.8f}, Price: {self.order.executed.price:.5f}, Cost: {self.order.executed.value:.2f}')
             self.bar_executed = len(self)
 
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
