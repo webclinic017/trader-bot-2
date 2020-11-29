@@ -3,12 +3,15 @@ import backtrader as bt
 
 class MAcrossover(bt.Strategy):
     # Moving average parameters
-    params = (('pfast', 20), ('pslow', 50),)
+    params = (('pfast', 20),
+              ('pslow', 50),
+              ('debug', False))
 
     def log(self, txt, dt=None):
-        dt = dt or self.datas[0].datetime.date(0)
-        print(f'{dt.isoformat()} {txt}')  # Comment this line when running optimization
-        self.log_pnl.append(f'{dt.isoformat()} {txt}')
+        if self.params.debug:
+            dt = dt or self.datas[0].datetime.date(0)
+            print(f'{dt.isoformat()} {txt}')  # Comment this line when running optimization
+            self.log_pnl.append(f'{dt.isoformat()} {txt}')
 
     def __init__(self):
         self.dataclose = self.datas[0].close
@@ -71,6 +74,6 @@ class MAcrossover(bt.Strategy):
                 self.order = self.close()
 
     def stop(self):
-        with open('logs/custom_log_limitsiz_4H.csv', 'w') as e:
+        with open('logs/custom_log.csv', 'w') as e:
             for line in self.log_pnl:
                 e.write(line + '\n')
