@@ -8,7 +8,7 @@ from binance.client import Client
 from app.binance.data_collector import DataCollector
 from app.db import ext_db
 from app.models import HistoricalData
-from app.strategies import CloseSMA
+from app.strategies.ma_crossover import MAcrossover
 
 
 class CommInfoFractional(bt.CommissionInfo):
@@ -85,11 +85,11 @@ class Spider:
 
         final_results_list = []
         for run in opt_runs:
-            for strategy in run:
-                value = round(strategy.broker.get_value(), 2)
+            for strat in run:
+                value = round(strat.broker.get_value(), 2)
                 PnL = round(value - start_portfolio_value, 2)
-                period = strategy.params.period
-                final_results_list.append([period, PnL])
+                pars = vars(strat.params).items()
+                final_results_list.append([pars, PnL])
 
         # Sort Results List
         by_PnL = sorted(final_results_list, key=lambda x: x[-1], reverse=True)
@@ -103,22 +103,28 @@ class Spider:
 
         # self.update_history()
 
-        # params = None
-        # self.run_strategy(symbol='BTCUSDT',
-        #                        interval=Client.KLINE_INTERVAL_4HOUR,
-        #                        strategy=CloseSMA,
-        #                        params=params,
-        #                        plot=False)
-
         params = {
-            'period': range(3, 35, 1)
+            'pfast': 4,
+            'pslow': 45,
+            'debug': True
         }
 
-        self.optimize_strategy(symbol='BTCUSDT',
-                               interval=Client.KLINE_INTERVAL_4HOUR,
-                               strategy=CloseSMA,
-                               params=params,
-                               plot=False)
+        self.run_strategy(symbol='BTCUSDT',
+                          interval=Client.KLINE_INTERVAL_4HOUR,
+                          strategy=MAcrossover,
+                          params=params,
+                          plot=True)
+
+        # params = {
+        #     'pfast': range(3, 51, 1),
+        #     'pslow': range(30, 205, 5),
+        # }
+        #
+        # self.optimize_strategy(symbol='BTCUSDT',
+        #                        interval=Client.KLINE_INTERVAL_4HOUR,
+        #                        strategy=MAcrossover,
+        #                        params=params,
+        #                        plot=False)
 
     def init_logging(self):
         logformat = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
