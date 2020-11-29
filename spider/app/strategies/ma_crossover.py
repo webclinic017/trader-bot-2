@@ -49,6 +49,9 @@ class MAcrossover(bt.Strategy):
         self.order = None
 
     def next(self):
+        if self.params.pfast >= self.params.pslow:
+            return
+
         # Check for open orders
         if self.order:
             return
