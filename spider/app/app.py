@@ -1,14 +1,13 @@
+import logging
+
+import backtrader as bt
 import pandas as pd
 import quantstats
-import logging
 from binance.client import Client
-import backtrader as bt
 
 from app.binance.data_collector import DataCollector
 from app.db import ext_db
 from app.models import HistoricalData
-
-from app.sizers import LongOnly
 from app.strategies import CloseSMA
 
 
@@ -24,38 +23,48 @@ class Spider:
     def __init__(self, config):
         self._config = config
 
-    def run_strategy(self, symbol, interval, strategy, params=None, plot=False):
+        ext_db.connect()
+        ext_db.create_tables([HistoricalData])
+        self.data_collector = DataCollector(self._config)
+        self.init_logging()
 
+    def init_cerebro(self, commission, cash, symbol, interval):
+        self.cerebro = bt.Cerebro(optreturn=False, stdstats=True)
+        self.cerebro.broker.setcommission(commission=commission)
+        self.cerebro.broker.set_cash(cash)
+        self.cerebro.addanalyzer(bt.analyzers.PyFolio, _name='PyFolio')
+        self.cerebro.addsizer(bt.sizers.PercentSizer, percents=70)
+
+        dataframe = self.data_collector.get_data_frame(symbol=symbol, interval=interval)
+        dataframe.index = pd.to_datetime(dataframe.index, unit='s')
+        data = bt.feeds.PandasData(dataname=dataframe, datetime='open_time')
+        self.cerebro.adddata(data)
+
+    def run_strategy(self, symbol, interval, strategy, params=None, plot=False):
         if params is None:
             params = {}
 
-        data_collector = DataCollector(self._config)
-
-        dataframe = data_collector.get_data_frame(symbol=symbol, interval=interval)
-        dataframe.index = pd.to_datetime(dataframe.index, unit='s')
-        data = bt.feeds.PandasData(dataname=dataframe, datetime='open_time')
-
-        cerebro = bt.Cerebro(optreturn=False, stdstats=True)
-        cerebro.broker.setcommission(commission=0.00075)
-        cerebro.broker.set_cash(100)
-        # cerebro.broker.addcommissioninfo(CommInfoFractional())
-        # cerebro.broker.set_filler(bt.broker.filler.FixedBarPerc(perc=25))
-        cerebro.adddata(data)
-        cerebro.addanalyzer(bt.analyzers.PyFolio, _name='PyFolio')
-        # cerebro.addsizer(LongOnly)
-        cerebro.addsizer(bt.sizers.PercentSizer, percents=70)
-
-        # self.report_strategy(cerebro, symbol, interval, strategy, params)
-        self.report_optimization(cerebro, strategy)
+        self.init_cerebro(commission=0.00075, cash=100, symbol=symbol, interval=interval)
+        self.report_strategy(symbol, interval, strategy, params)
 
         if plot:
-            cerebro.plot()
+            self.cerebro.plot()
 
-    def report_strategy(self, cerebro, symbol, interval, strategy, params):
-        cerebro.addstrategy(strategy, **params)
-        start_portfolio_value = cerebro.broker.getvalue()
-        thestrats = cerebro.run()
-        end_portfolio_value = cerebro.broker.getvalue()
+    def optimize_strategy(self, symbol, interval, strategy, params=None, plot=False):
+        if params is None:
+            params = {}
+
+        self.init_cerebro(commission=0.00075, cash=100, symbol=symbol, interval=interval)
+        self.report_optimization(strategy, params)
+
+        if plot:
+            self.cerebro.plot()
+
+    def report_strategy(self, symbol, interval, strategy, params):
+        self.cerebro.addstrategy(strategy, **params)
+        start_portfolio_value = self.cerebro.broker.getvalue()
+        thestrats = self.cerebro.run()
+        end_portfolio_value = self.cerebro.broker.getvalue()
         thestrat = thestrats[0]
         pnl = end_portfolio_value - start_portfolio_value
 
@@ -69,14 +78,10 @@ class Spider:
         self.logger.info(f'Final Portfolio Value: {end_portfolio_value:2.2f}')
         self.logger.info(f'PnL: {pnl:.2f}')
 
-    def report_optimization(self, cerebro, strategy):
-        params = {
-            'period': range(3, 35, 1)
-        }
-        cerebro.optstrategy(strategy, **params)
-
-        start_portfolio_value = cerebro.broker.getvalue()
-        opt_runs = cerebro.run()
+    def report_optimization(self, strategy, params):
+        self.cerebro.optstrategy(strategy, **params)
+        start_portfolio_value = self.cerebro.broker.getvalue()
+        opt_runs = self.cerebro.run()
 
         final_results_list = []
         for run in opt_runs:
@@ -95,23 +100,25 @@ class Spider:
             print('Period: {}, PnL: {}'.format(result[0], result[1]))
 
     def run(self):
-        self.init_logging()
 
-        ext_db.connect()
-        ext_db.create_tables([HistoricalData])
+        # self.update_history()
 
-        data_collector = DataCollector(self._config)
-        # data_collector.update_history()
+        # params = None
+        # self.run_strategy(symbol='BTCUSDT',
+        #                        interval=Client.KLINE_INTERVAL_4HOUR,
+        #                        strategy=CloseSMA,
+        #                        params=params,
+        #                        plot=False)
 
         params = {
-            'period': 15,  # range(3, 35, 1)
+            'period': range(3, 35, 1)
         }
 
-        self.run_strategy(symbol='BTCUSDT',
-                          interval=Client.KLINE_INTERVAL_1HOUR,
-                          strategy=CloseSMA,
-                          # params=params,
-                          plot=False)
+        self.optimize_strategy(symbol='BTCUSDT',
+                               interval=Client.KLINE_INTERVAL_4HOUR,
+                               strategy=CloseSMA,
+                               params=params,
+                               plot=False)
 
     def init_logging(self):
         logformat = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
@@ -120,3 +127,6 @@ class Spider:
 
         if self._config.DEBUG:
             logging.getLogger('app').setLevel(logging.DEBUG)
+
+    def update_history(self):
+        self.data_collector.update_history()
