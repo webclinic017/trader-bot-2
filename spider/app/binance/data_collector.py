@@ -55,7 +55,7 @@ class DataCollector:
             objects = map(convert, klines)
             HistoricalData.bulk_create(objects, batch_size=500)
 
-    def get_data_frame(self, symbol=None, interval=None, limit=5000) -> pd.DataFrame:
+    def get_data_frame(self, symbol=None, interval=None, limit=2500) -> pd.DataFrame:
 
         query = HistoricalData.select()
 

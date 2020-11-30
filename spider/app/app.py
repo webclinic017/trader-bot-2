@@ -8,6 +8,7 @@ from binance.client import Client
 from app.binance.data_collector import DataCollector
 from app.db import ext_db
 from app.models import HistoricalData
+from app.strategies import CloseSMA
 from app.strategies.ma_crossover import MAcrossover
 
 
@@ -28,7 +29,7 @@ class Spider:
         self.data_collector = DataCollector(self._config)
         self.init_logging()
 
-    def init_cerebro(self, commission, cash, symbol, interval):
+    def init_cerebro(self, commission, cash, symbol, interval, limit):
         self.cerebro = bt.Cerebro(optreturn=False, stdstats=True)
         self.cerebro.broker.setcommission(commission=commission)
         self.cerebro.broker.set_cash(cash)
@@ -36,26 +37,26 @@ class Spider:
         self.cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="Basic_Stats")
         self.cerebro.addsizer(bt.sizers.PercentSizer, percents=70)
 
-        dataframe = self.data_collector.get_data_frame(symbol=symbol, interval=interval)
+        dataframe = self.data_collector.get_data_frame(symbol=symbol, interval=interval, limit=limit)
         dataframe.index = pd.to_datetime(dataframe.index, unit='s')
         data = bt.feeds.PandasData(dataname=dataframe, datetime='open_time')
         self.cerebro.adddata(data)
 
-    def run_strategy(self, symbol, interval, strategy, params=None, plot=False):
+    def run_strategy(self, symbol, interval, strategy, params=None, limit=2500, plot=False):
         if params is None:
             params = {}
 
-        self.init_cerebro(commission=0.00075, cash=100, symbol=symbol, interval=interval)
+        self.init_cerebro(commission=0.00075, cash=100, symbol=symbol, interval=interval, limit=limit)
         self.report_strategy(symbol, interval, strategy, params)
 
         if plot:
             self.cerebro.plot()
 
-    def optimize_strategy(self, symbol, interval, strategy, params=None, plot=False):
+    def optimize_strategy(self, symbol, interval, strategy, params=None, limit=2500, plot=False):
         if params is None:
             params = {}
 
-        self.init_cerebro(commission=0.00075, cash=100, symbol=symbol, interval=interval)
+        self.init_cerebro(commission=0.00075, cash=100, symbol=symbol, interval=interval, limit=limit)
         self.report_optimization(strategy, params)
 
         if plot:
@@ -116,28 +117,46 @@ class Spider:
 
         # self.update_history()
 
-        params = {
-            'pfast': 4,
-            'pslow': 45,
-            'debug': True
-        }
-
-        self.run_strategy(symbol='BTCUSDT',
-                          interval=Client.KLINE_INTERVAL_4HOUR,
-                          strategy=MAcrossover,
-                          params=params,
-                          plot=True)
-
         # params = {
-        #     'pfast': range(3, 51, 1),
-        #     'pslow': range(30, 205, 5),
+        #     'pfast': 4,
+        #     'pslow': 45,
+        #     'debug': True
         # }
         #
-        # self.optimize_strategy(symbol='BTCUSDT',
-        #                        interval=Client.KLINE_INTERVAL_4HOUR,
-        #                        strategy=MAcrossover,
-        #                        params=params,
-        #                        plot=False)
+        # self.run_strategy(symbol='BTCUSDT',
+        #                   interval=Client.KLINE_INTERVAL_1HOUR,
+        #                   strategy=MAcrossover,
+        #                   params=params,
+        #                   limit=2500,
+        #                   plot=True)
+
+
+        limit = 2500
+        interval = Client.KLINE_INTERVAL_5MINUTE
+        strategy = MAcrossover
+
+        params = {
+            'pfast': range(3, 51, 1),
+            'pslow': range(30, 205, 5),
+        }
+
+        # limit = 2500
+        # interval = Client.KLINE_INTERVAL_5MINUTE
+        # strategy = CloseSMA
+        #
+        # params = {
+        #     'period': range(3, 35, 1)
+        # }
+
+        self.logger.info(f'Running {strategy.__name__}.. Interval: {interval}, datalimit: {limit}')
+
+        self.optimize_strategy(symbol='BTCUSDT',
+                               interval=interval,
+                               strategy=strategy,
+                               params=params,
+                               limit=limit,
+                               plot=False)
+
 
     def init_logging(self):
         logformat = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
