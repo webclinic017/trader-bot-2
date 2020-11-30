@@ -8,7 +8,7 @@ import quantstats
 from binance.client import Client
 from pandas import DataFrame
 
-from app.asdads import TimeSeriesSplitImproved
+from app.timeseriessplit import TimeSeriesSplitImproved
 from app.binance.data_collector import DataCollector
 from app.db import ext_db
 from app.models import HistoricalData
