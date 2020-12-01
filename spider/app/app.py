@@ -33,6 +33,10 @@ class Spider:
         limit = 3000
         interval = Client.KLINE_INTERVAL_4HOUR
         strategy = MAcrossover
+        params = {
+            'pfast': range(48, 51, 1),
+            'pslow': range(180, 205, 5),
+        }
 
         data = self.data_collector.get_data_frame(symbol=symbol, interval=interval, limit=limit)
         data.index = pd.to_datetime(data.index, unit='s')
@@ -40,18 +44,15 @@ class Spider:
         data = bt.feeds.PandasData(dataname=data, datetime='open_time')
 
         optimizer = StrategyOptimizer()
-        result = optimizer.run_single(data, strategy, params=None)
-        result = optimizer.run_opt(data, strategy, params=None)
-        result = optimizer.run_opt(data, strategy, params=None, wfo=True)
+        # result = optimizer.run_single(data, strategy, params=params)
+        result = optimizer.run_opt(data, strategy, params=params)
+        result = optimizer.run_opt(data, strategy, params=params, wfo=True)
 
 
 
         # self.logger.info(f'Running {strategy.__name__}.. Interval: {interval}, datalimit: {limit}')
 
-        params = {
-            'pfast': range(48, 51, 1),
-            'pslow': range(180, 205, 5),
-        }
+
 
         self.walk_forward(symbol=symbol, interval=interval, strategy=strategy,
                           params=params, limit=limit)

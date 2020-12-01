@@ -1,4 +1,5 @@
-from typing import Type
+import logging
+from typing import Type, List
 
 import backtrader as bt
 import pandas as pd
@@ -7,6 +8,7 @@ from app.analyzers.acctstats import AcctStats
 
 
 class StrategyOptimizer:
+    logger = logging.getLogger(__name__)
     INIT_CASH = 100
     BINANCE_COMMISSION = 0.00075
     PERCENT_SIZER = 70
@@ -36,7 +38,7 @@ class StrategyOptimizer:
 
         return result
 
-    def run_opt(self, data: pd.DataFrame, strategy: Type[bt.Strategy], params=None, wfo=False):
+    def run_opt(self, data: pd.DataFrame, strategy: Type[bt.Strategy], params=None, wfo=False) -> List[List[bt.OptReturn]]:
         """
         :param data:
         :param strategy:
@@ -44,4 +46,15 @@ class StrategyOptimizer:
         :param wfo: Whether walk forward optimization is active or not.
         :return:
         """
-        pass
+
+        if params is None:
+            params = {}
+
+        if wfo:
+            results = None
+        else:
+            self.cerebro.adddata(data)
+            self.cerebro.optstrategy(strategy, **params)
+            results = self.cerebro.run()
+
+        return results
