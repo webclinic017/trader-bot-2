@@ -10,8 +10,8 @@ from pandas import DataFrame
 from app.binance.data_collector import DataCollector
 from app.db import ext_db
 from app.models import HistoricalData
+from app.optimizer import StrategyOptimizer
 from app.strategies.ma_crossover import MAcrossover
-from app.strategies.smac import AcctStats
 from app.timeseriessplit import TimeSeriesSplitImproved
 
 
@@ -25,6 +25,66 @@ class Spider:
         ext_db.create_tables([HistoricalData])
         self.data_collector = DataCollector(self._config)
         self.init_logging()
+
+    def run(self):
+
+        # self.update_history()
+        symbol = 'BTCUSDT'
+        limit = 3000
+        interval = Client.KLINE_INTERVAL_4HOUR
+        strategy = MAcrossover
+
+        data = self.data_collector.get_data_frame(symbol=symbol, interval=interval, limit=limit)
+        data.index = pd.to_datetime(data.index, unit='s')
+        # todo bunun kalip kalmayacagina bakalim. WFO'yu bozuyor olabilir
+        data = bt.feeds.PandasData(dataname=data, datetime='open_time')
+
+        optimizer = StrategyOptimizer()
+        result = optimizer.run_single(data, strategy, params=None)
+        result = optimizer.run_opt(data, strategy, params=None)
+        result = optimizer.run_opt(data, strategy, params=None, wfo=True)
+
+
+
+        # self.logger.info(f'Running {strategy.__name__}.. Interval: {interval}, datalimit: {limit}')
+
+        params = {
+            'pfast': range(48, 51, 1),
+            'pslow': range(180, 205, 5),
+        }
+
+        self.walk_forward(symbol=symbol, interval=interval, strategy=strategy,
+                          params=params, limit=limit)
+        #
+        # self.run_strategy(symbol=symbol,
+        #                   interval=interval,
+        #                   strategy=strategy,
+        #                   params=params,
+        #                   limit=limit,
+        #                   plot=True)
+
+        # limit = 2500
+        # interval = Client.KLINE_INTERVAL_5MINUTE
+        # strategy = MAcrossover
+        #
+        # params = {
+        #     'pfast': range(48, 51, 1),
+        #     'pslow': range(180, 205, 5),
+        # }
+
+        #
+        # params = {
+        #     'period': range(3, 35, 1)
+        # }
+
+        # self.logger.info(f'Optimizing {strategy.__name__}.. Interval: {interval}, datalimit: {limit}')
+
+        # self.optimize_strategy(symbol='BTCUSDT',
+        #                        interval=interval,
+        #                        strategy=strategy,
+        #                        params=params,
+        #                        limit=limit,
+        #                        plot=False)
 
     def init_cerebro(self, commission, cash, symbol, interval, limit):
         self.cerebro = bt.Cerebro(optreturn=False, stdstats=True)
@@ -110,59 +170,6 @@ class Spider:
         for result in by_PnL:
             print('Period: {}, PnL: {}'.format(result[0], result[1]))
 
-    def run(self):
-
-        # self.update_history()
-        symbol = 'BTCUSDT'
-        limit = 3000
-        interval = Client.KLINE_INTERVAL_4HOUR
-        strategy = MAcrossover
-        # params = {
-        #     'pfast': 41,
-        #     'pslow': 177,
-        #     'debug': False
-        # }
-
-        # self.logger.info(f'Running {strategy.__name__}.. Interval: {interval}, datalimit: {limit}')
-
-        params = {
-            'pfast': range(48, 51, 1),
-            'pslow': range(180, 205, 5),
-        }
-
-        self.walk_forward(commission=0.00075, cash=100, symbol=symbol, interval=interval, strategy=strategy,
-                          params=params, limit=limit)
-        #
-        # self.run_strategy(symbol=symbol,
-        #                   interval=interval,
-        #                   strategy=strategy,
-        #                   params=params,
-        #                   limit=limit,
-        #                   plot=True)
-
-        # limit = 2500
-        # interval = Client.KLINE_INTERVAL_5MINUTE
-        # strategy = MAcrossover
-        #
-        # params = {
-        #     'pfast': range(48, 51, 1),
-        #     'pslow': range(180, 205, 5),
-        # }
-
-        #
-        # params = {
-        #     'period': range(3, 35, 1)
-        # }
-
-        # self.logger.info(f'Optimizing {strategy.__name__}.. Interval: {interval}, datalimit: {limit}')
-
-        # self.optimize_strategy(symbol='BTCUSDT',
-        #                        interval=interval,
-        #                        strategy=strategy,
-        #                        params=params,
-        #                        limit=limit,
-        #                        plot=False)
-
     def init_logging(self):
         logformat = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
 
@@ -201,7 +208,7 @@ class Spider:
         for row in print_list:
             self.logger.info(row_format.format('', *row))
 
-    def walk_forward(self, commission, cash, symbol, interval, strategy, params, limit):
+    def walk_forward(self, symbol, interval, strategy, params, limit, cash=100, commission=0.00075):
 
         dataframe = self.data_collector.get_data_frame(symbol=symbol, interval=interval, limit=limit)
         tscv = TimeSeriesSplitImproved(10)
@@ -217,6 +224,7 @@ class Spider:
             self.cerebro.addanalyzer(bt.analyzers.PyFolio, _name='PyFolio')
             self.cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="Basic_Stats")
             self.cerebro.addsizer(bt.sizers.PercentSizer, percents=70)
+
             tester = deepcopy(self.cerebro)
 
             self.cerebro.optstrategy(strategy, **params)
