@@ -90,7 +90,7 @@ class Spider:
         self.logger.info('Max Drawdown: {:.5f}'.format(quantstats.stats.max_drawdown(returns)))
 
         basic_stats = thestrat.analyzers.getbyname('Basic_Stats')
-        self.printTradeAnalysis(basic_stats.get_analysis())
+        self.print_trade_analysis(basic_stats.get_analysis())
 
         self.logger.info(f'Symbol: {symbol}, Interval: {interval}, Strategy: {strategy.__name__}, Params: {params}')
         self.logger.info(f'Starting Portfolio Value: {start_portfolio_value:2.2f}')
@@ -122,18 +122,23 @@ class Spider:
 
         # self.update_history()
         symbol = 'BTCUSDT'
-        limit = 5000
+        limit = 3000
         interval = Client.KLINE_INTERVAL_4HOUR
         strategy = MAcrossover
+        # params = {
+        #     'pfast': 41,
+        #     'pslow': 177,
+        #     'debug': False
+        # }
+
+        # self.logger.info(f'Running {strategy.__name__}.. Interval: {interval}, datalimit: {limit}')
+
         params = {
-            'pfast': 41,
-            'pslow': 177,
-            'debug': False
+            'pfast': range(48, 51, 1),
+            'pslow': range(180, 205, 5),
         }
 
-        self.logger.info(f'Running {strategy.__name__}.. Interval: {interval}, datalimit: {limit}')
-
-        self.walk_forward(commission=0.00075, cash=100, symbol=symbol, interval=interval, limit=limit)
+        self.walk_forward(commission=0.00075, cash=100, symbol=symbol, interval=interval, strategy=strategy, params=params, limit=limit)
         #
         # self.run_strategy(symbol=symbol,
         #                   interval=interval,
@@ -147,8 +152,8 @@ class Spider:
         # strategy = MAcrossover
         #
         # params = {
-        #     'pfast': range(3, 51, 1),
-        #     'pslow': range(30, 205, 5),
+        #     'pfast': range(48, 51, 1),
+        #     'pslow': range(180, 205, 5),
         # }
 
         #
@@ -157,7 +162,7 @@ class Spider:
         # }
 
         # self.logger.info(f'Optimizing {strategy.__name__}.. Interval: {interval}, datalimit: {limit}')
-        #
+
         # self.optimize_strategy(symbol='BTCUSDT',
         #                        interval=interval,
         #                        strategy=strategy,
@@ -176,7 +181,7 @@ class Spider:
     def update_history(self):
         self.data_collector.update_history()
 
-    def printTradeAnalysis(self, analyzer):
+    def print_trade_analysis(self, analyzer):
         total_open = analyzer.total.open
         total_closed = analyzer.total.closed
         total_won = analyzer.won.total
@@ -203,30 +208,16 @@ class Spider:
         for row in print_list:
             self.logger.info(row_format.format('', *row))
 
-    def walk_forward(self, commission, cash, symbol, interval, limit):
+    def walk_forward(self, commission, cash, symbol, interval, strategy, params, limit):
 
         dataframe = self.data_collector.get_data_frame(symbol=symbol, interval=interval, limit=limit)
-        dataframe.index = pd.to_datetime(dataframe.index, unit='s')
-
         tscv = TimeSeriesSplitImproved(10)
         split = tscv.split(dataframe, fixed_length=True, train_splits=4, test_splits=1)
         walk_forward_results = list()
 
         for train, test in split:
-
-            windowset = set()
-            while len(windowset) < 5:
-                f = random.randint(1, 51)
-                s = random.randint(1, 201)
-                if f > s:
-                    f, s = s, f
-                elif f == s:
-                    continue
-                windowset.add((f, s))
-
-            windows = list(windowset)
             datafeeds = {"BTCUSDT": dataframe}
-            self.cerebro = bt.Cerebro(stdstats=False, maxcpus=1)
+            self.cerebro = bt.Cerebro(stdstats=False, maxcpus=4)
             self.cerebro.broker.setcash(cash)
             self.cerebro.broker.setcommission(commission=commission)
             self.cerebro.addanalyzer(AcctStats)
@@ -235,9 +226,7 @@ class Spider:
             self.cerebro.addsizer(bt.sizers.PercentSizer, percents=70)
             tester = deepcopy(self.cerebro)
 
-            self.cerebro.optstrategy(MAcrossover,
-                                     optim=True,
-                                     optim_fs=windowset)
+            self.cerebro.optstrategy(strategy, **params)
 
             for s, df in datafeeds.items():
                 data = bt.feeds.PandasData(dataname=df.iloc[train], name=s, datetime='open_time')
@@ -246,20 +235,18 @@ class Spider:
             res = self.cerebro.run()
 
             # Get optimal combination
-            opt_res = DataFrame({r[0].params.optim_fs: r[0].analyzers.acctstats.get_analysis() for r in res}
-                                ).T.loc[:, "return"].sort_values(ascending=False).index[0]
+            opt_params = DataFrame({r[0].params: r[0].analyzers.acctstats.get_analysis() for r in res}
+                                ).T.loc[:, "return"].sort_values(ascending=False).index[0]._getpairs()
 
             # TESTING
-            tester.addstrategy(SMAC, optim=True, optim_fs=opt_res)
+            tester.addstrategy(strategy, **opt_params)
             for s, df in datafeeds.items():
                 data = bt.feeds.PandasData(dataname=df.iloc[test], name=s, datetime='open_time')
                 tester.adddata(data)
 
             res = tester.run()
             res_dict = res[0].analyzers.acctstats.get_analysis()
-            res_dict["fast"], res_dict["slow"] = opt_res
-            res_dict["start_date"] = dataframe.iloc[test[0]].name
-            res_dict["end_date"] = dataframe.iloc[test[-1]].name
+            res_dict["params"] = opt_params
             walk_forward_results.append(res_dict)
 
         wfdf = DataFrame(walk_forward_results)

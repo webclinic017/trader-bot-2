@@ -5,8 +5,6 @@ class MAcrossover(bt.Strategy):
     # Moving average parameters
     params = (('pfast', 20),
               ('pslow', 50),
-              ('optim', False),
-              ('optim_fs', ()),
               ('debug', False))
 
     def log(self, txt, dt=None):
@@ -20,9 +18,6 @@ class MAcrossover(bt.Strategy):
 
         # Order variable will contain ongoing order details/status
         self.order = None
-
-        if self.params.optim:  # Use a tuple during optimization
-            self.params.pfast, self.params.pslow = self.params.optim_fs  # fast and slow replaced by tuple's contents
 
         # Instantiate moving averages
         self.slow_sma = bt.indicators.MovingAverageSimple(self.datas[0],
@@ -42,11 +37,9 @@ class MAcrossover(bt.Strategy):
         # Attention: broker could reject order if not enough cash
         if order.status in [order.Completed]:
             if order.isbuy():
-                self.log(
-                    f'BUY EXECUTED, Size: {self.order.executed.size:.8f}, Price: {self.order.executed.price:.5f}, Cost: {self.order.executed.value:.2f}')
+                self.log(f'BUY EXECUTED, Size: {self.order.executed.size:.8f}, Price: {self.order.executed.price:.5f}, Cost: {self.order.executed.value:.2f}')
             elif order.issell():
-                self.log(
-                    f'SELL EXECUTED, Size: {self.order.executed.size:.8f}, Price: {self.order.executed.price:.5f}, Cost: {self.order.executed.value:.2f}')
+                self.log(f'SELL EXECUTED, Size: {self.order.executed.size:.8f}, Price: {self.order.executed.price:.5f}, Cost: {self.order.executed.value:.2f}')
             self.bar_executed = len(self)
 
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
