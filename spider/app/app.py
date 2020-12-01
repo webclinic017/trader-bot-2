@@ -1,5 +1,4 @@
 import logging
-import random
 from copy import deepcopy
 
 import backtrader as bt
@@ -8,19 +7,12 @@ import quantstats
 from binance.client import Client
 from pandas import DataFrame
 
-from app.timeseriessplit import TimeSeriesSplitImproved
 from app.binance.data_collector import DataCollector
 from app.db import ext_db
 from app.models import HistoricalData
-from app.strategies import CloseSMA
 from app.strategies.ma_crossover import MAcrossover
-from app.strategies.smac import AcctStats, PropSizer, SMAC
-
-
-class CommInfoFractional(bt.CommissionInfo):
-    def getsize(self, price, cash):
-        '''Returns fractional size for cash operation @price'''
-        return cash / price
+from app.strategies.smac import AcctStats
+from app.timeseriessplit import TimeSeriesSplitImproved
 
 
 class Spider:
@@ -138,7 +130,8 @@ class Spider:
             'pslow': range(180, 205, 5),
         }
 
-        self.walk_forward(commission=0.00075, cash=100, symbol=symbol, interval=interval, strategy=strategy, params=params, limit=limit)
+        self.walk_forward(commission=0.00075, cash=100, symbol=symbol, interval=interval, strategy=strategy,
+                          params=params, limit=limit)
         #
         # self.run_strategy(symbol=symbol,
         #                   interval=interval,
@@ -236,7 +229,7 @@ class Spider:
 
             # Get optimal combination
             opt_params = DataFrame({r[0].params: r[0].analyzers.acctstats.get_analysis() for r in res}
-                                ).T.loc[:, "return"].sort_values(ascending=False).index[0]._getpairs()
+                                   ).T.loc[:, "return"].sort_values(ascending=False).index[0]._getpairs()
 
             # TESTING
             tester.addstrategy(strategy, **opt_params)
