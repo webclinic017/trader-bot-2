@@ -5,18 +5,20 @@ from app.indicators.pmax import PMax
 
 
 class PMaxStrategy(bt.Strategy):
-    params = (('atr_length', 10), ('multiplier', 3.0), ('mav', 'EMA'),
-              ('length', 10), ('changeAtr', True))
+    # period = ATR length
+    # multiplier = ATR multiplier
+    # length = Moving Average length
+    # mav = moving average type (ema, sma vs..)
+    params = (('period', 10), ('multiplier', 3), ('length', 10))
+    lines = ('basic_ub', 'basic_lb', 'final_ub', 'final_lb')
 
+    # sma(hl/2, length) +- multiplier*atr(periyot)
     def __init__(self):
         super().__init__()
 
-        src = (self.datas[0].high + self.datas[0].low) / 2
         self.order = None
         self.log_pnl = []
-        self.lines.mav = bti.MovAv.EMA(src, period=self.params.length)
-        self.lines.pmax = PMax()
-        self.signal = bti.CrossOver(self.lines.mav, self.lines.pmax)
+        self.lines.signal = PMax(period=self.params.period, multiplier=self.params.multiplier, length=self.params.length)
 
     def log(self, txt, dt=None):
         """ Logging function for this strategy"""
