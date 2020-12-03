@@ -1,4 +1,5 @@
 import logging
+from typing import List
 
 import quantstats
 
@@ -6,44 +7,74 @@ import quantstats
 class Reporter(object):
     logger = logging.getLogger(__name__)
 
-    def report(self, results, strategy):
-        if type(results) == strategy:
-            self.report_single(results)
+    def report(self, results, strategy, log=False) -> List:
 
-        elif type(results) is list and type(results) == strategy:
-            for r in results:
-                self.report_single(r)
+        report_list = []
+
+        if type(results) == strategy:
+            report_list.append(self._report_single(results, log=log))
+
+        elif type(results) is list \
+                and type(results[0]) == list \
+                and type(results[0][0]) == strategy:
+
+            report_list = report_list + self.report_multiple(results, log=log)
 
         elif type(results) is list:
-            self.report_multiple(results)
+            report_list = report_list + self.report_multiple(results, log=log)
 
         else:
             self.logger.error("wtf")
 
-    def report_single(self, result, html=False):
+        return report_list
+
+    def _report_single(self, result, html=False, log=False):
         quantstats.extend_pandas()
         portfolio_stats = result.analyzers.getbyname('PyFolio')
+        basic_stats = result.analyzers.getbyname('Basic_Stats')
         returns, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
         returns.index = returns.index.tz_convert(None)
 
         if html:
             quantstats.reports.html(returns, output='logs/stats.html', title='CloseSMA')
 
-        self.logger.info('CAGR: {:.3f}'.format(quantstats.stats.cagr(returns)))
-        self.logger.info('Sharpe: {:.3f}'.format(quantstats.stats.sharpe(returns)))
-        self.logger.info('Sortino: {:.3f}'.format(quantstats.stats.sortino(returns)))
-        self.logger.info('Volatility: {:.3f}'.format(quantstats.stats.volatility(returns)))
-        self.logger.info('Avg Win: {:.5f}'.format(quantstats.stats.avg_win(returns)))
-        self.logger.info('Avg Loss: {:.5f}'.format(quantstats.stats.avg_loss(returns)))
-        self.logger.info('Max Drawdown: {:.5f}'.format(quantstats.stats.max_drawdown(returns)))
+        cagr = quantstats.stats.cagr(returns)
+        sharpe = quantstats.stats.sharpe(returns)
+        sortino = quantstats.stats.sortino(returns)
+        volatility = quantstats.stats.volatility(returns)
+        win = quantstats.stats.avg_win(returns)
+        loss = quantstats.stats.avg_loss(returns)
+        drawdown = quantstats.stats.max_drawdown(returns)
 
-        basic_stats = result.analyzers.getbyname('Basic_Stats')
-        self.print_trade_analysis(basic_stats.get_analysis())
+        if log:
+            self.logger.info('CAGR: {:.3f}'.format(cagr))
+            self.logger.info('Sharpe: {:.3f}'.format(sharpe))
+            self.logger.info('Sortino: {:.3f}'.format(sortino))
+            self.logger.info('Volatility: {:.3f}'.format(volatility))
+            self.logger.info('Avg Win: {:.5f}'.format(win))
+            self.logger.info('Avg Loss: {:.5f}'.format(loss))
+            self.logger.info('Max Drawdown: {:.5f}'.format(drawdown))
+            self.print_trade_analysis(basic_stats.get_analysis())
 
-    def report_multiple(self, results):
+        results = {
+            'cagr': cagr,
+            'sharpe': sharpe,
+            'sortino': sortino,
+            'volatility': volatility,
+            'avg_win': win,
+            'avg_loss': loss,
+            'max_drawdown': drawdown,
+        }
+
+        return results
+
+    def report_multiple(self, results, log=False):
+        a = []
         for r in results:
             for s in r:
-                self.report_single(s)
+                a.append(self._report_single(s, log=log))
+
+        return a
 
     def print_trade_analysis(self, analyzer):
         total_open = analyzer.total.open

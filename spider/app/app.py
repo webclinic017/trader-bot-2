@@ -50,7 +50,7 @@ class Spider:
         result = optimizer.run_opt(strategy, params=params, wfo=True)
 
         rep = Reporter()
-        rep.report(result, strategy)
+        report = rep.report(result, strategy)
         self.logger.info("Selametle...")
 
         # self.logger.info(f'Running {strategy.__name__}.. Interval: {interval}, datalimit: {limit}')
