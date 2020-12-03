@@ -8,6 +8,9 @@ from binance.client import Client
 from pandas import DataFrame
 
 from app.analyzers.acctstats import AcctStats
+# from app.indicators.pmax import PMax
+from app.strategies.supertrend import SuperTrendStrategy
+from app.timeseriessplit import TimeSeriesSplitImproved
 from app.binance.data_collector import DataCollector
 from app.db import ext_db
 from app.models import HistoricalData
@@ -210,9 +213,34 @@ class Spider:
         for row in print_list:
             self.logger.info(row_format.format('', *row))
 
-    def walk_forward(self, symbol, interval, strategy, params, limit, cash=100, commission=0.00075):
-        # PMAX ADAMDIR
-        # AKSİNİ SÖYLEYEN SUPERTRENDDİR
+    def get_quantstats_results(self, run: bt.MetaStrategy) -> dict:
+        quantstats.extend_pandas()
+        portfolio_stats = run.analyzers.getbyname('PyFolio')
+        returns, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
+        returns.index = returns.index.tz_convert(None)
+
+        results = {'cagr': quantstats.stats.cagr(returns),
+                   'sharpe': quantstats.stats.sharpe(returns),
+                    'sortino': quantstats.stats.sortino(returns),
+                    'volatility': quantstats.stats.volatility(returns),
+                    'avg_win': quantstats.stats.avg_win(returns),
+                    'avg_loss': quantstats.stats.avg_loss(returns),
+                    'max_drawdown': quantstats.stats.max_drawdown(returns),
+        }
+
+        return results
+
+    def print_quantstats_results(self, results):
+        self.logger.info('CAGR: {:.3f}'.format(results['cagr']))
+        self.logger.info('Sharpe: {:.3f}'.format(results['sharpe']))
+        self.logger.info('Sortino: {:.3f}'.format(results['sortino']))
+        self.logger.info('Volatility: {:.3f}'.format(results['volatility']))
+        self.logger.info('Avg Win: {:.5f}'.format(results['avg_win']))
+        self.logger.info('Avg Loss: {:.5f}'.format(results['avg_loss']))
+        self.logger.info('Max Drawdown: {:.5f}'.format(results['max_drawdown']))
+
+    def walk_forward(self, commission, cash, symbol, interval, strategy, params, limit):
+
         dataframe = self.data_collector.get_data_frame(symbol=symbol, interval=interval, limit=limit)
         tscv = TimeSeriesSplitImproved(10)
         split = tscv.split(dataframe, fixed_length=True, train_splits=4, test_splits=1)
@@ -239,8 +267,14 @@ class Spider:
             res = self.cerebro.run()
 
             # Get optimal combination
-            opt_params = DataFrame({r[0].params: r[0].analyzers.acctstats.get_analysis() for r in res}
-                                   ).T.loc[:, "return"].sort_values(ascending=False).index[0]._getpairs()
+            # res_params = {r[0].params: r[0].analyzers.acctstats.get_analysis() for r in res}
+            res_params = {r[0].params: self.get_quantstats_results(r[0]) for r in res}
+            opt_results = DataFrame(res_params).T.loc[:, "cagr"].sort_values(ascending=False).index[0]
+            opt_params= opt_results.__dict__
+            #TODO: _
+            # 1) getpairs guncel parametreleri donmuyor. FIXED
+            # 2) Yukarıdaki optimal kombinasyon hesabı maximum return'e gore yapiliyor, daha iyi bir cozum ile degistirilecek (riski de iceren bir metrik) FIXED
+            # Not: (Eger data limit kucuk olursa parametreleri dusurmek gerekiyor MACROSSOVER icin yoksa islem yapmiyor.)
 
             # TESTING
             tester.addstrategy(strategy, **opt_params)
@@ -248,10 +282,16 @@ class Spider:
                 data = bt.feeds.PandasData(dataname=df.iloc[test], name=s, datetime='open_time')
                 tester.adddata(data)
 
-            res = tester.run()
-            res_dict = res[0].analyzers.acctstats.get_analysis()
+            res = tester.run()[0]
+            res_dict = res.analyzers.acctstats.get_analysis()
             res_dict["params"] = opt_params
             walk_forward_results.append(res_dict)
+
+            print(res_dict)
+            basic_stats = res.analyzers.getbyname('Basic_Stats')
+            self.print_trade_analysis(basic_stats.get_analysis())
+            quantstats_result = self.get_quantstats_results(res)
+            self.print_quantstats_results(quantstats_result)
 
         wfdf = DataFrame(walk_forward_results)
         print(wfdf)
