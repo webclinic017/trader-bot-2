@@ -12,16 +12,18 @@ class Reporter(object):
         report_list = []
 
         if type(results) == strategy:
+            # single run
             report_list.append(self._report_single(results, log=log))
 
         elif type(results) is list \
                 and type(results[0]) == list \
                 and type(results[0][0]) == strategy:
-
-            report_list = report_list + self.report_multiple(results, log=log)
+            # wfo
+            report_list = report_list + self._report_multiple(results, log=log)
 
         elif type(results) is list:
-            report_list = report_list + self.report_multiple(results, log=log)
+            # optimization run
+            report_list = report_list + self._report_multiple(results, log=log)
 
         else:
             self.logger.error("wtf")
@@ -47,6 +49,8 @@ class Reporter(object):
         drawdown = quantstats.stats.max_drawdown(returns)
 
         if log:
+            self.logger.info("---------------------------------")
+            self.logger.info("Params: {}".format(result.params.__dict__))
             self.logger.info('CAGR: {:.3f}'.format(cagr))
             self.logger.info('Sharpe: {:.3f}'.format(sharpe))
             self.logger.info('Sortino: {:.3f}'.format(sortino))
@@ -54,9 +58,10 @@ class Reporter(object):
             self.logger.info('Avg Win: {:.5f}'.format(win))
             self.logger.info('Avg Loss: {:.5f}'.format(loss))
             self.logger.info('Max Drawdown: {:.5f}'.format(drawdown))
-            self.print_trade_analysis(basic_stats.get_analysis())
+            self._print_trade_analysis(basic_stats.get_analysis())
 
         results = {
+            'params': result.params.__dict__,
             'cagr': cagr,
             'sharpe': sharpe,
             'sortino': sortino,
@@ -68,7 +73,7 @@ class Reporter(object):
 
         return results
 
-    def report_multiple(self, results, log=False):
+    def _report_multiple(self, results, log=False):
         a = []
         for r in results:
             for s in r:
@@ -76,7 +81,7 @@ class Reporter(object):
 
         return a
 
-    def print_trade_analysis(self, analyzer):
+    def _print_trade_analysis(self, analyzer):
         total_open = analyzer.total.open
         total_closed = analyzer.total.closed
         total_won = analyzer.won.total

@@ -8,9 +8,6 @@ from binance.client import Client
 from pandas import DataFrame
 
 from app.analyzers.acctstats import AcctStats
-# from app.indicators.pmax import PMax
-from app.strategies.supertrend import SuperTrendStrategy
-from app.timeseriessplit import TimeSeriesSplitImproved
 from app.binance.data_collector import DataCollector
 from app.db import ext_db
 from app.models import HistoricalData
@@ -39,8 +36,8 @@ class Spider:
         interval = Client.KLINE_INTERVAL_4HOUR
         strategy = MAcrossover
         params = {
-            'pfast': range(48, 51, 1),
-            'pslow': range(180, 205, 5),
+            'pfast': range(5, 30, 1),
+            'pslow': range(50, 205, 5),
         }
 
         data = self.data_collector.get_data_frame(symbol=symbol, interval=interval, limit=limit)
@@ -52,9 +49,10 @@ class Spider:
         # result = optimizer.run_opt(strategy, params=params)
         result = optimizer.run_opt(strategy, params=params, wfo=True)
 
-        rep = Reporter()
-        report = rep.report(result, strategy)
-        self.logger.info("Selametle...")
+        reporter = Reporter()
+        report = reporter.report(result, strategy, log=True)
+        self.logger.info("report")
+        exit()
 
         # self.logger.info(f'Running {strategy.__name__}.. Interval: {interval}, datalimit: {limit}')
 
@@ -221,12 +219,12 @@ class Spider:
 
         results = {'cagr': quantstats.stats.cagr(returns),
                    'sharpe': quantstats.stats.sharpe(returns),
-                    'sortino': quantstats.stats.sortino(returns),
-                    'volatility': quantstats.stats.volatility(returns),
-                    'avg_win': quantstats.stats.avg_win(returns),
-                    'avg_loss': quantstats.stats.avg_loss(returns),
-                    'max_drawdown': quantstats.stats.max_drawdown(returns),
-        }
+                   'sortino': quantstats.stats.sortino(returns),
+                   'volatility': quantstats.stats.volatility(returns),
+                   'avg_win': quantstats.stats.avg_win(returns),
+                   'avg_loss': quantstats.stats.avg_loss(returns),
+                   'max_drawdown': quantstats.stats.max_drawdown(returns),
+                   }
 
         return results
 
@@ -239,7 +237,7 @@ class Spider:
         self.logger.info('Avg Loss: {:.5f}'.format(results['avg_loss']))
         self.logger.info('Max Drawdown: {:.5f}'.format(results['max_drawdown']))
 
-    def walk_forward(self, commission, cash, symbol, interval, strategy, params, limit):
+    def walk_forward(self, symbol, interval, strategy, params, limit, commission=0.00075, cash=100):
 
         dataframe = self.data_collector.get_data_frame(symbol=symbol, interval=interval, limit=limit)
         tscv = TimeSeriesSplitImproved(10)
@@ -270,8 +268,8 @@ class Spider:
             # res_params = {r[0].params: r[0].analyzers.acctstats.get_analysis() for r in res}
             res_params = {r[0].params: self.get_quantstats_results(r[0]) for r in res}
             opt_results = DataFrame(res_params).T.loc[:, "cagr"].sort_values(ascending=False).index[0]
-            opt_params= opt_results.__dict__
-            #TODO: _
+            opt_params = opt_results.__dict__
+            # TODO: _
             # 1) getpairs guncel parametreleri donmuyor. FIXED
             # 2) Yukarıdaki optimal kombinasyon hesabı maximum return'e gore yapiliyor, daha iyi bir cozum ile degistirilecek (riski de iceren bir metrik) FIXED
             # Not: (Eger data limit kucuk olursa parametreleri dusurmek gerekiyor MACROSSOVER icin yoksa islem yapmiyor.)

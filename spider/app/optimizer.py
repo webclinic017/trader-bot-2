@@ -4,6 +4,7 @@ from typing import Type, List
 
 import backtrader as bt
 import pandas as pd
+import quantstats
 
 from app.analyzers.acctstats import AcctStats
 from app.timeseriessplit import TimeSeriesSplitImproved
@@ -96,8 +97,9 @@ class StrategyOptimizer:
 
             res = temp_cerebro.run()
 
-            opt_params = pd.DataFrame({r[0].params: r[0].analyzers.acctstats.get_analysis() for r in res}
-                                      ).T.loc[:, "return"].sort_values(ascending=False).index[0]._getpairs()
+            res_params = {r[0].params: self.get_quantstats_results(r[0]) for r in res}
+            opt_results = pd.DataFrame(res_params).T.loc[:, "cagr"].sort_values(ascending=False).index[0]
+            opt_params = opt_results.__dict__
 
             tester.addstrategy(strategy, **opt_params)
             for s, df in datafeeds.items():
@@ -105,8 +107,24 @@ class StrategyOptimizer:
                 tester.adddata(ddata)
 
             res = tester.run()
-            # res_dict = res[0].analyzers.acctstats.get_analysis()
-            # res_dict["params"] = opt_params
             walk_forward_results.append(res)
 
         return walk_forward_results
+
+    def get_quantstats_results(self, run: bt.MetaStrategy) -> dict:
+        quantstats.extend_pandas()
+        portfolio_stats = run.analyzers.getbyname('PyFolio')
+        returns, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
+        returns.index = returns.index.tz_convert(None)
+
+        results = {
+            'cagr': quantstats.stats.cagr(returns),
+            'sharpe': quantstats.stats.sharpe(returns),
+            'sortino': quantstats.stats.sortino(returns),
+            'volatility': quantstats.stats.volatility(returns),
+            'avg_win': quantstats.stats.avg_win(returns),
+            'avg_loss': quantstats.stats.avg_loss(returns),
+            'max_drawdown': quantstats.stats.max_drawdown(returns),
+        }
+
+        return results
