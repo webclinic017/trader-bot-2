@@ -9,8 +9,9 @@ class SuperTrendBand(bt.Indicator):
 
     def __init__(self):
         self.atr = bt.indicators.AverageTrueRange(period=self.p.period)
-        self.l.basic_ub = ((self.data.high + self.data.low) / 2) + (self.atr * self.p.multiplier)
-        self.l.basic_lb = ((self.data.high + self.data.low) / 2) - (self.atr * self.p.multiplier)
+        hl2 = (self.data.high + self.data.low) / 2
+        self.l.basic_ub = hl2 + (self.atr * self.p.multiplier)
+        self.l.basic_lb = hl2 - (self.atr * self.p.multiplier)
 
     def next(self):
         if len(self) - 1 == self.p.period:

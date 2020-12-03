@@ -47,6 +47,7 @@ class StrategyOptimizer:
         self.cerebro.adddata(self.btdata)
         self.cerebro.addstrategy(strategy, **params)
         result = self.cerebro.run()[0]
+        self.cerebro.plot()
 
         return result
 

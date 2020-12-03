@@ -14,6 +14,8 @@ from app.models import HistoricalData
 from app.optimizer import StrategyOptimizer
 from app.reporter import Reporter
 from app.strategies.ma_crossover import MAcrossover
+from app.strategies.pmax import PMaxStrategy
+from app.strategies.supertrend import SuperTrendStrategy
 from app.timeseriessplit import TimeSeriesSplitImproved
 
 
@@ -32,12 +34,13 @@ class Spider:
 
         # self.update_history()
         symbol = 'BTCUSDT'
-        limit = 3000
+        limit = 5000
         interval = Client.KLINE_INTERVAL_4HOUR
-        strategy = MAcrossover
+        strategy = PMaxStrategy
         params = {
-            'pfast': range(5, 30, 1),
-            'pslow': range(50, 205, 5),
+            'period': 7,
+            'multiplier': 3,
+            'length': 10
         }
 
         data = self.data_collector.get_data_frame(symbol=symbol, interval=interval, limit=limit)
@@ -45,9 +48,9 @@ class Spider:
         # todo bunun kalip kalmayacagina bakalim. WFO'yu bozuyor olabilir
 
         optimizer = StrategyOptimizer(data, symbol, interval)
-        # result = optimizer.run_single(strategy, params=params)
+        result = optimizer.run_single(strategy, params=params)
         # result = optimizer.run_opt(strategy, params=params)
-        result = optimizer.run_opt(strategy, params=params, wfo=True)
+        # result = optimizer.run_opt(strategy, params=params, wfo=True)
 
         reporter = Reporter()
         report = reporter.report(result, strategy, log=True)

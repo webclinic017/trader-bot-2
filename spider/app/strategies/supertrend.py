@@ -5,18 +5,15 @@ from app.indicators.supertrend import SuperTrend
 
 
 class SuperTrendStrategy(bt.Strategy):
-    params = (('period', 10), ('multiplier', 3.0), ('mav', 'EMA'),
-              ('length', 10), ('changeAtr', True))
+    params = (('period', 10), ('multiplier', 3.0), ('changeAtr', True))
 
     def __init__(self):
         super().__init__()
 
-        src = (self.datas[0].high + self.datas[0].low) / 2
         self.order = None
         self.log_pnl = []
-        # self.lines.mav = bti.MovAv.EMA(src, period=self.params.length)
-        self.lines.supertrend = SuperTrend(period=self.params.period, multiplier=self.params.multiplier)
-        # self.signal = bti.CrossOver(self.lines.supertrend)
+        self.lines.signal = SuperTrend(period=self.params.period, multiplier=self.params.multiplier)
+        self.signal = self.lines.signal
 
     def log(self, txt, dt=None):
         """ Logging function for this strategy"""
@@ -47,8 +44,29 @@ class SuperTrendStrategy(bt.Strategy):
         self.order = None
 
     def next(self):
+        # Check for open orders
+        if self.order:
+            return
 
-        pass
+        # Check if we are in the market
+        if not self.position:
+            # We are not in the market, look for a signal to OPEN trades
+
+            # If the 20 SMA is above the 50 SMA
+            if self.signal > 0:
+                # self.log(f'BUY CREATE {self.datas[0].close:2f}')
+                # Keep track of the created order to avoid a 2nd order
+                self.order = self.buy()
+            # Otherwise if the 20 SMA is below the 50 SMA
+            elif self.signal < 0:
+                # self.log(f'SELL CREATE {self.datas[0].close:2f}')
+                # Keep track of the created order to avoid a 2nd order
+                self.order = self.sell()
+        else:
+            # We are already in the market, look for a signal to CLOSE trades
+            if len(self) >= (self.bar_executed + 5):
+                # self.log(f'CLOSE CREATE {self.datas[0].close:2f}')
+                self.order = self.close()
 
     def stop(self):
         with open('logs/custom_log.csv', 'w') as e:
