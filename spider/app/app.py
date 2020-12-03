@@ -7,10 +7,12 @@ import quantstats
 from binance.client import Client
 from pandas import DataFrame
 
+from app.analyzers.acctstats import AcctStats
 from app.binance.data_collector import DataCollector
 from app.db import ext_db
 from app.models import HistoricalData
 from app.optimizer import StrategyOptimizer
+from app.reporter import Reporter
 from app.strategies.ma_crossover import MAcrossover
 from app.timeseriessplit import TimeSeriesSplitImproved
 
@@ -41,21 +43,20 @@ class Spider:
         data = self.data_collector.get_data_frame(symbol=symbol, interval=interval, limit=limit)
         data.index = pd.to_datetime(data.index, unit='s')
         # todo bunun kalip kalmayacagina bakalim. WFO'yu bozuyor olabilir
-        data = bt.feeds.PandasData(dataname=data, datetime='open_time')
 
-        optimizer = StrategyOptimizer()
-        # result = optimizer.run_single(data, strategy, params=params)
-        result = optimizer.run_opt(data, strategy, params=params)
-        result = optimizer.run_opt(data, strategy, params=params, wfo=True)
+        optimizer = StrategyOptimizer(data, symbol, interval)
+        # result = optimizer.run_single(strategy, params=params)
+        # result = optimizer.run_opt(strategy, params=params)
+        result = optimizer.run_opt(strategy, params=params, wfo=True)
 
-
+        rep = Reporter()
+        rep.report(result, strategy)
+        self.logger.info("Selametle...")
 
         # self.logger.info(f'Running {strategy.__name__}.. Interval: {interval}, datalimit: {limit}')
 
-
-
-        self.walk_forward(symbol=symbol, interval=interval, strategy=strategy,
-                          params=params, limit=limit)
+        # self.walk_forward(symbol=symbol, interval=interval, strategy=strategy,
+        #                   params=params, limit=limit)
         #
         # self.run_strategy(symbol=symbol,
         #                   interval=interval,
@@ -210,7 +211,8 @@ class Spider:
             self.logger.info(row_format.format('', *row))
 
     def walk_forward(self, symbol, interval, strategy, params, limit, cash=100, commission=0.00075):
-
+        # PMAX ADAMDIR
+        # AKSİNİ SÖYLEYEN SUPERTRENDDİR
         dataframe = self.data_collector.get_data_frame(symbol=symbol, interval=interval, limit=limit)
         tscv = TimeSeriesSplitImproved(10)
         split = tscv.split(dataframe, fixed_length=True, train_splits=4, test_splits=1)
