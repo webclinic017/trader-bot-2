@@ -1,10 +1,6 @@
-from typing import List
-
-import backtrader as bt
 import logging
 
 import quantstats
-from backtrader import MetaStrategy
 
 
 class Reporter(object):
@@ -14,11 +10,12 @@ class Reporter(object):
         if type(results) == strategy:
             self.report_single(results)
 
+        elif type(results) is list and type(results) == strategy:
+            for r in results:
+                self.report_single(r)
+
         elif type(results) is list:
             self.report_multiple(results)
-
-        elif type(results) is "something":
-            pass
 
         else:
             self.logger.error("wtf")

@@ -105,8 +105,8 @@ class StrategyOptimizer:
                 tester.adddata(ddata)
 
             res = tester.run()
-            res_dict = res[0].analyzers.acctstats.get_analysis()
-            res_dict["params"] = opt_params
-            walk_forward_results.append(res_dict)
+            # res_dict = res[0].analyzers.acctstats.get_analysis()
+            # res_dict["params"] = opt_params
+            walk_forward_results.append(res)
 
         return walk_forward_results
