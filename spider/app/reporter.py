@@ -1,3 +1,4 @@
+import datetime
 import logging
 from typing import List
 
@@ -7,7 +8,7 @@ import quantstats
 class Reporter(object):
     logger = logging.getLogger(__name__)
 
-    def report(self, results, strategy, log=False) -> List:
+    def report(self, results, strategy, log=False, csv=False) -> List:
 
         report_list = []
 
@@ -27,6 +28,22 @@ class Reporter(object):
 
         else:
             self.logger.error("wtf")
+
+        if csv:
+            filename = "logs/report_" + str(int(datetime.datetime.now().timestamp())) + ".csv"
+
+            with open(filename, "w") as fp:
+                if len(report_list) > 0:
+                    fp.write("Strategy\t" + str(strategy) + "\n")
+
+                    headers = [k for k in report_list[0]]
+                    headers.remove("params")
+                    headers.insert(0, "params")
+
+                    fp.write("\t".join(headers) + "\n")
+
+                    for report in report_list:
+                        fp.write("\t".join([str(report[h]) for h in headers]) + "\n")
 
         return report_list
 
@@ -58,9 +75,10 @@ class Reporter(object):
             self.logger.info('Avg Win: {:.5f}'.format(win))
             self.logger.info('Avg Loss: {:.5f}'.format(loss))
             self.logger.info('Max Drawdown: {:.5f}'.format(drawdown))
-            self._print_trade_analysis(basic_stats.get_analysis())
 
-        results = {
+        dict1 = self._print_trade_analysis(basic_stats.get_analysis(), log=log)
+
+        dict2 = {
             'params': result.params.__dict__,
             'cagr': cagr,
             'sharpe': sharpe,
@@ -71,17 +89,20 @@ class Reporter(object):
             'max_drawdown': drawdown,
         }
 
-        return results
+        return {**dict1, **dict2}
 
     def _report_multiple(self, results, log=False):
         a = []
         for r in results:
             for s in r:
-                a.append(self._report_single(s, log=log))
+                try:
+                    a.append(self._report_single(s, log=log))
+                except Exception:
+                    self.logger.error("Error with parameters.")
 
         return a
 
-    def _print_trade_analysis(self, analyzer):
+    def _print_trade_analysis(self, analyzer, log=False):
         total_open = analyzer.total.open
         total_closed = analyzer.total.closed
         total_won = analyzer.won.total
@@ -103,7 +124,20 @@ class Reporter(object):
 
         print_list = [h1, r1, h2, r2]
         row_format = "{:<15}" * (header_length + 1)
-        self.logger.info("Trade Analysis Results:")
 
-        for row in print_list:
-            self.logger.info(row_format.format('', *row))
+        if log:
+            self.logger.info("Trade Analysis Results:")
+
+            for row in print_list:
+                self.logger.info(row_format.format('', *row))
+
+        return {
+            'total_open': total_open,
+            'total_closed': total_closed,
+            'total_won': total_won,
+            'total_lost': total_lost,
+            'win_streak': win_streak,
+            'lose_streak': lose_streak,
+            'pnl_net': pnl_net,
+            'strike_rate': strike_rate,
+        }
