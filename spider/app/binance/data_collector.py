@@ -65,7 +65,10 @@ class DataCollector:
         if interval is not None:
             query = query.where(HistoricalData.interval == interval)
 
-        query = query.order_by(HistoricalData.open_time.desc()).limit(limit)
+        query = query.order_by(HistoricalData.open_time.desc())
+
+        if limit:
+            query = query.limit(limit)
 
         historical_data = (query)
         dataframe = pd.DataFrame(list(historical_data.dicts()))
