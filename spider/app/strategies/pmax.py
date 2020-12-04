@@ -1,5 +1,4 @@
 import backtrader as bt
-import backtrader.indicators as bti
 
 from app.indicators.pmax import PMax
 
@@ -9,43 +8,52 @@ class PMaxStrategy(bt.Strategy):
     # multiplier = ATR multiplier
     # length = Moving Average length
     # mav = moving average type (ema, sma vs..)
-    params = (('period', 10), ('multiplier', 3), ('length', 10))
-    lines = ('basic_ub', 'basic_lb', 'final_ub', 'final_lb')
+    params = (('period', 10),
+              ('multiplier', 3),
+              ('length', 10),
+              ('printlog', False))
 
     # sma(hl/2, length) +- multiplier*atr(periyot)
     def __init__(self):
         super().__init__()
-
         self.order = None
         self.log_pnl = []
-        self.lines.signal = PMax(period=self.params.period, multiplier=self.params.multiplier, length=self.params.length)
+        self.lines.pmax = PMax(period=self.params.period, multiplier=self.params.multiplier, length=self.params.length)
+        self.lines.ma = self.lines.pmax.ma
+        self.signal = bt.indicators.CrossOver(self.lines.ma, self.lines.pmax)
+        self.len_data = len(list(self.datas[0]))
 
     def log(self, txt, dt=None):
         """ Logging function for this strategy"""
-        # dt = dt or self.datas[0].datetime.datetime(0)
-        # print('%s, %s' % (dt, txt))
-        pass
+        if self.params.printlog:
+            dt = dt or self.datas[0].datetime.datetime(0)
+            print('%s, %s' % (dt, txt))
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
-            # An active Buy/Sell order has been submitted/accepted - Nothing to do
+            # Buy/Sell order submitted/accepted to/by broker - Nothing to do
+            self.log('ORDER ACCEPTED/SUBMITTED', dt=order.created.dt)
+            self.order = order
             return
 
-        # Check if an order has been completed
-        # Attention: broker could reject order if not enough cash
-        if order.status in [order.Completed]:
+        if order.status in [order.Expired]:
+            self.log('BUY EXPIRED')
+
+        elif order.status in [order.Completed]:
             if order.isbuy():
                 self.log(
-                    f'BUY EXECUTED, Size: {self.order.executed.size:.2f}, Price: {self.order.executed.price:.2f}, Cost: {self.order.executed.value:.2f}')
-            elif order.issell():
-                self.log(
-                    f'SELL EXECUTED, Size: {self.order.executed.size:.2f}, Price: {self.order.executed.price:.2f}, Cost: {self.order.executed.value:.2f}')
-            self.bar_executed = len(self)
+                    'BUY EXECUTED, Price: %.2f, Cost: %.2f, Comm %.2f' %
+                    (order.executed.price,
+                     order.executed.value,
+                     order.executed.comm))
 
-        elif order.status in [order.Canceled, order.Margin, order.Rejected]:
-            self.log('Order Canceled/Margin/Rejected')
+            else:  # Sell
+                self.log('SELL EXECUTED, Price: %.2f, Cost: %.2f, Comm %.2f' %
+                         (order.executed.price,
+                          order.executed.value,
+                          order.executed.comm))
 
-            # Reset orders
+        # Sentinel to None: new orders allowed
         self.order = None
 
     def next(self):
@@ -53,25 +61,19 @@ class PMaxStrategy(bt.Strategy):
         if self.order:
             return
 
-        # Check if we are in the market
-        if not self.position:
-            # We are not in the market, look for a signal to OPEN trades
+        if len(self) + 1 >= self.len_data:
+            return
 
-            # If the 20 SMA is above the 50 SMA
+        if self.position:
+            if self.signal < 0:
+                self.log('SELL CREATE {:.2f}'.format(self.data.close[0]))
+                self.sell()
+
+        else:
             if self.signal > 0:
-                # self.log(f'BUY CREATE {self.datas[0].close:2f}')
+                self.log('BUY CREATE {:.2f}'.format(self.data.close[0]))
                 # Keep track of the created order to avoid a 2nd order
                 self.order = self.buy()
-            # Otherwise if the 20 SMA is below the 50 SMA
-            elif self.signal < 0:
-                # self.log(f'SELL CREATE {self.datas[0].close:2f}')
-                # Keep track of the created order to avoid a 2nd order
-                self.order = self.sell()
-        else:
-            # We are already in the market, look for a signal to CLOSE trades
-            if len(self) >= (self.bar_executed + 5):
-                # self.log(f'CLOSE CREATE {self.datas[0].close:2f}')
-                self.order = self.close()
 
     def stop(self):
         with open('logs/pmax_custom_log.csv', 'w') as e:
