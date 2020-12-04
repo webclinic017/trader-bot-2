@@ -2,6 +2,7 @@ import logging
 from copy import deepcopy
 
 import backtrader as bt
+import numpy as np
 import pandas as pd
 import quantstats
 from binance.client import Client
@@ -13,9 +14,7 @@ from app.db import ext_db
 from app.models import HistoricalData
 from app.optimizer import StrategyOptimizer
 from app.reporter import Reporter
-from app.strategies.ma_crossover import MAcrossover
 from app.strategies.pmax import PMaxStrategy
-from app.strategies.supertrend import SuperTrendStrategy
 from app.timeseriessplit import TimeSeriesSplitImproved
 
 
@@ -34,63 +33,31 @@ class Spider:
 
         # self.update_history()
         symbol = 'BTCUSDT'
-        limit = 5000
-        interval = Client.KLINE_INTERVAL_4HOUR
+        limit = 2997
+        interval = Client.KLINE_INTERVAL_15MINUTE
         strategy = PMaxStrategy
         params = {
-            'period': 7,
-            'multiplier': 3,
-            'length': 10
+            'period': range(10, 25, 1),
+            'multiplier': np.arange(2, 4.5, 0.1),
+            'length': range(10, 16, 1)
         }
 
         data = self.data_collector.get_data_frame(symbol=symbol, interval=interval, limit=limit)
         data.index = pd.to_datetime(data.index, unit='s')
-        # todo bunun kalip kalmayacagina bakalim. WFO'yu bozuyor olabilir
+
+        # son satirdaki bar henuz kapanmadigi icin onu dahil etme
+        data.drop(data.tail(1).index, inplace=True)
 
         optimizer = StrategyOptimizer(data, symbol, interval)
-        result = optimizer.run_single(strategy, params=params)
-        # result = optimizer.run_opt(strategy, params=params)
+        # result = optimizer.run_single(strategy, params=params)
+        result = optimizer.run_opt(strategy, params=params)
         # result = optimizer.run_opt(strategy, params=params, wfo=True)
 
         reporter = Reporter()
-        report = reporter.report(result, strategy, log=True)
-        self.logger.info("report")
+        report = reporter.report(result, strategy, log=False, csv=True)
+        self.logger.info("Finished.")
         exit()
 
-        # self.logger.info(f'Running {strategy.__name__}.. Interval: {interval}, datalimit: {limit}')
-
-        # self.walk_forward(symbol=symbol, interval=interval, strategy=strategy,
-        #                   params=params, limit=limit)
-        #
-        # self.run_strategy(symbol=symbol,
-        #                   interval=interval,
-        #                   strategy=strategy,
-        #                   params=params,
-        #                   limit=limit,
-        #                   plot=True)
-
-        # limit = 2500
-        # interval = Client.KLINE_INTERVAL_5MINUTE
-        # strategy = MAcrossover
-        #
-        # params = {
-        #     'pfast': range(48, 51, 1),
-        #     'pslow': range(180, 205, 5),
-        # }
-
-        #
-        # params = {
-        #     'period': range(3, 35, 1)
-        # }
-
-        # self.logger.info(f'Optimizing {strategy.__name__}.. Interval: {interval}, datalimit: {limit}')
-
-        # self.optimize_strategy(symbol='BTCUSDT',
-        #                        interval=interval,
-        #                        strategy=strategy,
-        #                        params=params,
-        #                        limit=limit,
-        #                        plot=False)
 
     def init_cerebro(self, commission, cash, symbol, interval, limit):
         self.cerebro = bt.Cerebro(optreturn=False, stdstats=True)
