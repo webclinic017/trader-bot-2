@@ -26,7 +26,7 @@ class StrategyOptimizer:
         self.__init_cerebro()
 
     def __init_cerebro(self):
-        self.cerebro = bt.Cerebro(stdstats=False, maxcpus=4)
+        self.cerebro = bt.Cerebro(stdstats=True, maxcpus=4)
         self.cerebro.broker.setcash(self.INIT_CASH)
         self.cerebro.broker.setcommission(commission=self.BINANCE_COMMISSION)
         self.cerebro.addanalyzer(AcctStats)
