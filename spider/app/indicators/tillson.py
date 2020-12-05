@@ -2,21 +2,20 @@ from backtrader.indicators import MovingAverageBase, MovAv
 
 
 class TillsonMovingAverage(MovingAverageBase):
-
     alias = ('T3', 'MovingAverageTillsonT3',)
 
     lines = ('T3',)
     params = (('_movav', MovAv.EMA), ('volume_factor', 0.7))
+    plotinfo = dict(subplot=True)
 
     def __init__(self):
-        ema1 = self.p._movav(self.data, period=self.p.period)
+        d = (self.data.high + self.data.low + (2 * self.data.close)) / 4
+        ema1 = self.p._movav(d, period=self.p.period)
         ema2 = self.p._movav(ema1, period=self.p.period)
         ema3 = self.p._movav(ema2, period=self.p.period)
         ema4 = self.p._movav(ema3, period=self.p.period)
         ema5 = self.p._movav(ema4, period=self.p.period)
         ema6 = self.p._movav(ema5, period=self.p.period)
-
-        # data = (self.data.high + self.data.low + (2 * self.data.close)) / 4
 
         a = self.p.volume_factor
         a_2 = a * a

@@ -44,8 +44,13 @@ class PMaxBand(bt.Indicator):
         # STS
         self.l.sts = self.l.ma - (self.atr * self.p.multiplier)
 
+        self.odd_bar_count = 0
+
+    def prenext(self):
+        self.odd_bar_count = len(self)
+
     def next(self):
-        if len(self) - 1 == self.p.period:
+        if len(self) == self.odd_bar_count + 1:
             self.l.fub[0] = self.l.str[0]
             self.l.flb[0] = self.l.sts[0]
         else:
@@ -66,16 +71,20 @@ class PMax(bt.Indicator):
     """
     PMax indicator
     """
-    params = (('period', 7), ('multiplier', 3), ('length', 10),('mav', 'sma'))
+    params = (('period', 7), ('multiplier', 3), ('length', 10), ('mav', 'sma'))
     lines = ('profix_maximizer', 'ma')
-    plotinfo = dict(subplot=False)
+    plotinfo = dict(subplot=True)
 
     def __init__(self):
         self.pmb = PMaxBand(period=self.p.period, multiplier=self.p.multiplier, length=self.p.length, mav=self.p.mav)
         self.lines.ma = self.pmb.ma
+        self.odd_bar_count = 0
+
+    def prenext(self):
+        self.odd_bar_count = len(self)
 
     def next(self):
-        if len(self) - 1 == self.p.period:
+        if len(self) == self.odd_bar_count + 1:
             self.l.profix_maximizer[0] = self.pmb.fub[0]
             return
 

@@ -11,8 +11,8 @@ class PMaxStrategy(bt.Strategy):
     params = (('period', 10),
               ('multiplier', 3),
               ('length', 10),
-              ('printlog', False),
-              ('mav', 'sma'))
+              ('mav', 'sma'),
+              ('printlog', False))
 
     # sma(hl/2, length) +- multiplier*atr(periyot)
     def __init__(self):

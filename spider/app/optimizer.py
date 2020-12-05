@@ -34,7 +34,7 @@ class StrategyOptimizer:
         self.cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='Basic_Stats')
         self.cerebro.addsizer(bt.sizers.PercentSizer, percents=self.PERCENT_SIZER)
 
-    def run_single(self, strategy: Type[bt.Strategy], params: dict = None) -> bt.MetaStrategy:
+    def run_single(self, strategy: Type[bt.Strategy], params: dict = None, plot=False) -> bt.MetaStrategy:
         if params is None:
             params = {}
         else:
@@ -47,7 +47,9 @@ class StrategyOptimizer:
         self.cerebro.adddata(self.btdata)
         self.cerebro.addstrategy(strategy, **params)
         result = self.cerebro.run()[0]
-        #self.cerebro.plot()
+
+        if plot:
+            self.cerebro.plot()
 
         return result
 
