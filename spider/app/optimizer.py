@@ -47,7 +47,7 @@ class StrategyOptimizer:
         self.cerebro.adddata(self.btdata)
         self.cerebro.addstrategy(strategy, **params)
         result = self.cerebro.run()[0]
-        self.cerebro.plot()
+        #self.cerebro.plot()
 
         return result
 
@@ -80,7 +80,7 @@ class StrategyOptimizer:
 
         for train, test in split:
             datafeeds = {self.symbol: self.dataframe}
-            temp_cerebro = bt.Cerebro(stdstats=False, maxcpus=4)
+            temp_cerebro = bt.Cerebro(stdstats=False, maxcpus=6)
             temp_cerebro.broker.setcash(self.INIT_CASH)
             temp_cerebro.broker.setcommission(commission=self.BINANCE_COMMISSION)
             temp_cerebro.addanalyzer(AcctStats)

@@ -11,14 +11,15 @@ class PMaxStrategy(bt.Strategy):
     params = (('period', 10),
               ('multiplier', 3),
               ('length', 10),
-              ('printlog', False))
+              ('printlog', False),
+              ('mav', 'sma'))
 
     # sma(hl/2, length) +- multiplier*atr(periyot)
     def __init__(self):
         super().__init__()
         self.order = None
         self.log_pnl = []
-        self.lines.pmax = PMax(period=self.params.period, multiplier=self.params.multiplier, length=self.params.length)
+        self.lines.pmax = PMax(period=self.p.period, multiplier=self.p.multiplier, length=self.p.length, mav=self.p.mav)
         self.lines.ma = self.lines.pmax.ma
         self.signal = bt.indicators.CrossOver(self.lines.ma, self.lines.pmax)
         self.len_data = len(list(self.datas[0]))

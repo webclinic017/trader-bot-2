@@ -6,13 +6,34 @@ class PMaxBand(bt.Indicator):
     # multiplier = ATR multiplier
     # length = Moving Average length
     # mav = moving average type (ema, sma vs..)
-    params = (('period', 10), ('multiplier', 3), ('length', 10))
+    params = (('period', 10), ('multiplier', 3), ('length', 10), ('mav', 'sma'))
     lines = ('str', 'sts', 'fub', 'flb', 'ma')
 
     def __init__(self):
         self.atr = bt.indicators.AverageTrueRange(period=self.p.period)
         hl2 = (self.data.high + self.data.low) / 2
-        self.l.ma = bt.indicators.SMA(hl2, period=self.p.length)
+        if self.p.mav == 'sma':
+            self.l.ma = bt.indicators.MovingAverageSimple(hl2, period=self.p.length)
+        elif self.p.mav == 'ema':
+            self.l.ma = bt.indicators.ExponentialMovingAverage(hl2, period=self.p.length)
+        elif self.p.mav == 'wma':
+            self.l.ma = bt.indicators.WeightedMovingAverage(hl2, period=self.p.length)
+        elif self.p.mav == 'ama':
+            self.l.ma = bt.indicators.AdaptiveMovingAverage(hl2, period=self.p.length)
+        elif self.p.mav == 'smma':
+            self.l.ma = bt.indicators.SmoothedMovingAverage(hl2, period=self.p.length)
+        elif self.p.mav == 'hma':
+            self.l.ma = bt.indicators.HullMovingAverage(hl2, period=self.p.length)
+        elif self.p.mav == 'dma':
+            self.l.ma = bt.indicators.DicksonMovingAverage(hl2, period=self.p.length)
+        elif self.p.mav == 'tema':
+            self.l.ma = bt.indicators.TripleExponentialMovingAverage(hl2, period=self.p.length)
+        elif self.p.mav == 'zlema':
+            self.l.ma = bt.indicators.ZeroLagExponentialMovingAverage(hl2, period=self.p.length)
+        elif self.p.mav == 'dema':
+            self.l.ma = bt.indicators.DoubleExponentialMovingAverage(hl2, period=self.p.length)
+        #todo: 1) Tillson eklenmeli.
+        #      2) tema, zlema ve dema calismadi.
 
         # STR
         self.l.str = self.l.ma + (self.atr * self.p.multiplier)
@@ -42,12 +63,12 @@ class PMax(bt.Indicator):
     """
     PMax indicator
     """
-    params = (('period', 7), ('multiplier', 3), ('length', 10))
+    params = (('period', 7), ('multiplier', 3), ('length', 10),('mav', 'sma'))
     lines = ('profix_maximizer', 'ma')
     plotinfo = dict(subplot=False)
 
     def __init__(self):
-        self.pmb = PMaxBand(period=self.p.period, multiplier=self.p.multiplier, length=self.p.length)
+        self.pmb = PMaxBand(period=self.p.period, multiplier=self.p.multiplier, length=self.p.length, mav=self.p.mav)
         self.lines.ma = self.pmb.ma
 
     def next(self):

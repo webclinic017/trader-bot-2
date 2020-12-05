@@ -37,9 +37,10 @@ class Spider:
         interval = Client.KLINE_INTERVAL_15MINUTE
         strategy = PMaxStrategy
         params = {
-            'period': range(10, 25, 1),
-            'multiplier': np.arange(2, 4.5, 0.1),
-            'length': range(10, 16, 1)
+            'period': 12, #range(10, 25, 1),
+            'multiplier': 4.4,#np.arange(2, 4.5, 0.1),
+            'length': 10, #range(10, 16, 1)
+            'mav': 'sma'
         }
 
         data = self.data_collector.get_data_frame(symbol=symbol, interval=interval, limit=limit)
@@ -49,8 +50,8 @@ class Spider:
         data.drop(data.tail(1).index, inplace=True)
 
         optimizer = StrategyOptimizer(data, symbol, interval)
-        # result = optimizer.run_single(strategy, params=params)
-        result = optimizer.run_opt(strategy, params=params)
+        result = optimizer.run_single(strategy, params=params)
+        # result = optimizer.run_opt(strategy, params=params)
         # result = optimizer.run_opt(strategy, params=params, wfo=True)
 
         reporter = Reporter()
