@@ -1,5 +1,8 @@
 import backtrader as bt
 
+# from app.indicators.tillson import TillsonMovingAverage
+from app.indicators.tillson import TillsonMovingAverage
+
 
 class PMaxBand(bt.Indicator):
     # period = ATR length
@@ -32,8 +35,8 @@ class PMaxBand(bt.Indicator):
             self.l.ma = bt.indicators.ZeroLagExponentialMovingAverage(hl2, period=self.p.length)
         elif self.p.mav == 'dema':
             self.l.ma = bt.indicators.DoubleExponentialMovingAverage(hl2, period=self.p.length)
-        #todo: 1) Tillson eklenmeli.
-        #      2) tema, zlema ve dema calismadi.
+        elif self.p.mav == 'T3':
+            self.l.ma = TillsonMovingAverage(self.data, period=self.p.length, volume_factor=0.7)
 
         # STR
         self.l.str = self.l.ma + (self.atr * self.p.multiplier)
