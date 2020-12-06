@@ -24,8 +24,7 @@ class Spider:
     def __init__(self, config):
         self._config = config
 
-        ext_db.connect()
-        ext_db.create_tables([HistoricalData])
+        ext_db.connection()
         self.data_collector = DataCollector(self._config)
         self.init_logging()
 

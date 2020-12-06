@@ -21,3 +21,6 @@ class HistoricalData(BaseExtModel):
         indexes = (
             (('symbol', 'interval', 'open_time'), True),
         )
+
+
+HistoricalData.create_table()
