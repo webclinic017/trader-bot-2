@@ -1,21 +1,15 @@
 import logging
-from copy import deepcopy
 
 import backtrader as bt
 import numpy as np
 import pandas as pd
-import quantstats
 from binance.client import Client
-from pandas import DataFrame
 
-from app.analyzers.acctstats import AcctStats
 from app.binance.data_collector import DataCollector
 from app.db import ext_db
-from app.models import HistoricalData
 from app.optimizer import StrategyOptimizer
 from app.reporter import Reporter
 from app.strategies.pmax import PMaxStrategy
-from app.timeseriessplit import TimeSeriesSplitImproved
 
 
 class Spider:
@@ -30,17 +24,21 @@ class Spider:
 
     def run(self):
         # self.update_history()
+
         symbol = 'BTCUSDT'
-        limit = 2997
-        interval = Client.KLINE_INTERVAL_15MINUTE
+        # limit = 288  # 1 day (5 min)
+        # limit = 2016  # 1 week (5 min)
+        # limit = 8064  # 1 month (5 min)
+        limit = 80640  # 10 month (5 min)
+        interval = Client.KLINE_INTERVAL_5MINUTE
         strategy = PMaxStrategy
         params = {
-            'period': range(5, 101, 5),
-            'multiplier': np.arange(2, 4.5, 0.5),
-            'length': range(10, 16, 2),
-            'mav': 'sma'
+            'period': range(10, 80, 10),
+            'multiplier': np.arange(2, 5.1, 0.5),
+            'length': range(10, 21, 5),
+            'mav': 'T3'
         }
-
+        print("Params: " + str(params))
         data = self.data_collector.get_data_frame(symbol=symbol, interval=interval, limit=limit)
         data.index = pd.to_datetime(data.index, unit='s')
 
@@ -49,8 +47,8 @@ class Spider:
 
         optimizer = StrategyOptimizer(data, symbol, interval)
         # result = optimizer.run_single(strategy, params=params, plot=True)
-        result = optimizer.run_opt(strategy, params=params)
-        # result = optimizer.run_opt(strategy, params=params, wfo=True)
+        # result = optimizer.run_opt(strategy, params=params)
+        result = optimizer.run_opt(strategy, params=params, wfo=True)
 
         reporter = Reporter()
         report = reporter.report(result, strategy, log=True, csv=True)
