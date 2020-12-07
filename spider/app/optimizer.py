@@ -100,8 +100,8 @@ class StrategyOptimizer:
 
             res = temp_cerebro.run()
 
-            res_params = {r[0].params: self.get_quantstats_results(r[0]) for r in res}
-            opt_results = pd.DataFrame(res_params).T.loc[:, "cagr"].sort_values(ascending=False).index[0]
+            res_params = {(i, r[0].params): self.get_quantstats_results(r[0]) for i, r in enumerate(res)}
+            idx, opt_results = pd.DataFrame(res_params).T.loc[:, "cagr"].sort_values(ascending=False).index[0]
             opt_params = opt_results.__dict__
 
             tester.addstrategy(strategy, **opt_params)
