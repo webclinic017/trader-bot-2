@@ -29,13 +29,14 @@ class Spider:
         # limit = 288  # 1 day (5 min)
         # limit = 2016  # 1 week (5 min)
         # limit = 8064  # 1 month (5 min)
-        limit = 80640  # 10 month (5 min)
-        interval = Client.KLINE_INTERVAL_5MINUTE
+        # limit = 80640  # 10 month (5 min)
+        limit = 2997
+        interval = Client.KLINE_INTERVAL_15MINUTE
         strategy = PMaxStrategy
         params = {
-            'period': range(10, 80, 10),
+            'period': range(10, 15, 10),
             'multiplier': np.arange(2, 5.1, 0.5),
-            'length': range(10, 21, 5),
+            'length': range(10, 21, 2),
             'mav': 'T3'
         }
         print("Params: " + str(params))

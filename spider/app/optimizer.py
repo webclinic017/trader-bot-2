@@ -7,6 +7,7 @@ import pandas as pd
 import quantstats
 
 from app.analyzers.acctstats import AcctStats
+from app.robustness import WalkforwardStability
 from app.timeseriessplit import TimeSeriesSplitImproved
 
 
@@ -103,6 +104,7 @@ class StrategyOptimizer:
             res_params = {(i, r[0].params): self.get_quantstats_results(r[0]) for i, r in enumerate(res)}
             idx, opt_results = pd.DataFrame(res_params).T.loc[:, "cagr"].sort_values(ascending=False).index[0]
             opt_params = opt_results.__dict__
+            optimum_run = res[idx]
 
             tester.addstrategy(strategy, **opt_params)
             for s, df in datafeeds.items():
@@ -110,6 +112,12 @@ class StrategyOptimizer:
                 tester.adddata(ddata)
 
             res = tester.run()
+
+            train_results = self.get_quantstats_results(optimum_run[0])
+            test_results = self.get_quantstats_results(res[0])
+            wfo_stability = WalkforwardStability(train_results=train_results, test_results=test_results)
+            print(wfo_stability.get_results())
+
             walk_forward_results.append(res)
 
         return walk_forward_results
@@ -128,6 +136,8 @@ class StrategyOptimizer:
             'avg_win': quantstats.stats.avg_win(returns),
             'avg_loss': quantstats.stats.avg_loss(returns),
             'max_drawdown': quantstats.stats.max_drawdown(returns),
+            'avg_return': quantstats.stats.avg_return(returns),
+            'profit_ratio': quantstats.stats.profit_ratio(returns),
+            'profit_factor': quantstats.stats.profit_factor(returns),
         }
-
         return results
