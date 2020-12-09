@@ -3,7 +3,8 @@ import logging
 from typing import List
 
 import quantstats
-
+import matplotlib.pyplot as plt
+import pandas as pd
 
 class Reporter(object):
     logger = logging.getLogger(__name__)
@@ -141,3 +142,37 @@ class Reporter(object):
             'pnl_net': pnl_net,
             'strike_rate': strike_rate,
         }
+
+    def get_series(self, res, column='close'):
+        """ Return data series
+        """
+        return res.data._dataname[column]
+
+    def get_buynhold_curve(self, res):
+        """ Returns Buy & Hold equity curve starting at 100
+        """
+        s = self.get_series(res, column='open')
+        return 100 * s / s[0]
+
+    def get_equity_curve(self, res):
+        """ Return series containing equity curve
+        """
+        dt = res.data._dataname['open'].index
+        value = res.observers.broker.lines[1].array[:len(dt)]
+        curve = pd.Series(data=value, index=dt)
+        return 100 * curve / curve.iloc[0]
+
+    def plot_equity_curve(self, res, fname='equity_curve.png'):
+        """ Plots equity curve to png file
+        """
+        curve = self.get_equity_curve(res)
+        buynhold = self.get_buynhold_curve(res)
+        xrnge = [curve.index[0], curve.index[-1]]
+        dotted = pd.Series(data=[100, 100], index=xrnge)
+        fig, ax = plt.subplots(1, 1)
+        ax.set_ylabel('Net Asset Value (start=100)')
+        ax.set_title('Equity curve')
+        _ = curve.plot(kind='line', ax=ax)
+        _ = buynhold.plot(kind='line', ax=ax, color='grey')
+        _ = dotted.plot(kind='line', ax=ax, color='grey', linestyle=':')
+        return fig

@@ -7,6 +7,7 @@ import pandas as pd
 import quantstats
 
 from app.analyzers.acctstats import AcctStats
+from app.reporter import Reporter
 from app.robustness import WalkforwardStability
 from app.timeseriessplit import TimeSeriesSplitImproved
 
@@ -47,7 +48,9 @@ class StrategyOptimizer:
         # todo multiple data feeds
         self.cerebro.adddata(self.btdata)
         self.cerebro.addstrategy(strategy, **params)
+        # self.cerebro.addwriter(bt.WriterFile, csv=True, out='logs/out_log.csv')
         result = self.cerebro.run()[0]
+        Reporter().plot_equity_curve(result)
 
         if plot:
             self.cerebro.plot()
@@ -141,3 +144,4 @@ class StrategyOptimizer:
             'profit_factor': quantstats.stats.profit_factor(returns),
         }
         return results
+
