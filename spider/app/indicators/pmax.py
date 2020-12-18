@@ -15,6 +15,8 @@ class PMaxBand(bt.Indicator):
     def __init__(self):
         self.atr = bt.indicators.AverageTrueRange(period=self.p.period)
         hl2 = (self.data.high + self.data.low) / 2
+        self.p.mav = str(self.p.mav).lower()
+
         if self.p.mav == 'sma':
             self.l.ma = bt.indicators.MovingAverageSimple(hl2, period=self.p.length)
         elif self.p.mav == 'ema':
