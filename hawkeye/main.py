@@ -1,5 +1,4 @@
 import os
-import signal
 
 from app import Hawkeye
 from config import config
@@ -9,7 +8,9 @@ if __name__ == '__main__':
     conf = config[env]
 
     clint = Hawkeye(config=conf)
-    signal.signal(signal.SIGINT, clint.close_connections)
-    signal.signal(signal.SIGTERM, clint.close_connections)
 
-    clint.run()
+    try:
+        # clint.run()
+        clint.main2()
+    except KeyboardInterrupt:
+        clint.close_connections()

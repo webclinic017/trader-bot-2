@@ -6,10 +6,18 @@ from binance.websockets import BinanceSocketManager
 
 from app.binance.binclient import BinanceClient
 from app.db import ext_db
+from app.handlers import *
 
 
 class Hawkeye:
     logger = logging.getLogger(__name__)
+
+    KLINE_HANDLERS = {
+        "BTCUSDT": {
+            KLINE_INTERVAL_1MINUTE: process_kline_1m,
+            KLINE_INTERVAL_5MINUTE: process_kline_5m,
+        }
+    }
 
     def __init__(self, config):
         self._config = config
@@ -18,13 +26,6 @@ class Hawkeye:
 
         ext_db.connection()
         self.init_logging()
-
-        self.KLINE_HANDLERS = {
-            "BTCUSDT": {
-                KLINE_INTERVAL_1MINUTE: self.process_kline_1m,
-                KLINE_INTERVAL_5MINUTE: self.process_kline_5m,
-            }
-        }
 
     def run(self):
         # get parameters from the table optimized_params
@@ -47,34 +48,6 @@ class Hawkeye:
 
                 self.logger.info(f"Registered socket for {symbol} - {interval}")
 
-    def process_kline_1m(self, msg):
-        if msg['k']['x']:  # at each close
-            self.logger.info(pprint.pformat(msg))
-
-    def process_kline_5m(self, msg):
-        if msg['k']['x']:  # at each close
-            self.logger.info(pprint.pformat(msg))
-
-    def process_kline_15m(self, msg):
-        if msg['k']['x']:  # at each close
-            self.logger.info(pprint.pformat(msg))
-
-    def process_kline_30m(self, msg):
-        if msg['k']['x']:  # at each close
-            self.logger.info(pprint.pformat(msg))
-
-    def process_kline_1h(self, msg):
-        if msg['k']['x']:  # at each close
-            self.logger.info(pprint.pformat(msg))
-
-    def process_kline_4h(self, msg):
-        if msg['k']['x']:  # at each close
-            self.logger.info(pprint.pformat(msg))
-
-    def process_kline_1d(self, msg):
-        if msg['k']['x']:  # at each close
-            self.logger.info(pprint.pformat(msg))
-
     def init_logging(self):
         logformat = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
 
@@ -83,7 +56,7 @@ class Hawkeye:
         if self._config.DEBUG:
             logging.getLogger('app').setLevel(logging.DEBUG)
 
-    def close_connections(self, signum, stack_frame):
+    def close_connections(self):
         self.logger.info("Gracefully closing open sockets...")
 
         if self.bm is not None:
@@ -91,3 +64,90 @@ class Hawkeye:
                 self.bm.stop_socket(key)
 
         # program burada neden sonlanmiyor?
+
+    def main2(self):
+        import backtrader as bt
+        from os import environ
+        import datetime as dt
+        import time
+        from app.strategies.pmax import PMaxStrategy
+        from app.ccxtbt import CCXTStore
+
+        # import ccxt
+        # binance = ccxt.binance({
+        #     'apiKey': environ.get('API_KEY_TEST') or '',
+        #     'secret': environ.get('API_SECRET_TEST') or '',
+        #     'verbose': True,
+        # })
+        # binance.set_sandbox_mode(True)
+        # print(binance.create_market_sell_order('BTC/USDT', 0.00111675))
+        # exit(0)
+
+        cerebro = bt.Cerebro(quicknotify=True)
+        broker_config = {
+            'apiKey': environ.get('API_KEY_TEST') or '',
+            'secret': environ.get('API_SECRET_TEST') or '',
+            'nonce': lambda: str(int(time.time() * 1000)),
+            'enableRateLimit': True,
+        }
+        sandbox = True
+
+        store = CCXTStore(exchange='binance',
+                          currency='USDT',
+                          config=broker_config,
+                          retries=5,
+                          debug=False,
+                          sandbox=sandbox)
+
+        if sandbox:
+            # override public url to fetch klines from original api instead of testnet
+            store.exchange.urls['api']['public'] = 'https://api.binance.com/api/v3'
+
+        broker_mapping = {
+            'order_types': {
+                bt.Order.Market: 'market',
+                bt.Order.Limit: 'limit',
+                bt.Order.Stop: 'stop-loss',  # stop-loss for kraken, stop for bitmex
+                bt.Order.StopLimit: 'stop limit'
+            },
+            'mappings': {
+                'closed_order': {
+                    'key': 'status',
+                    'value': 'closed'
+                },
+                'canceled_order': {
+                    'key': 'status',
+                    'value': 'canceled'
+                }
+            }
+        }
+
+        broker = store.getbroker(broker_mapping=broker_mapping)
+        cerebro.setbroker(broker)
+
+        hist_start_date = dt.datetime.utcnow() - dt.timedelta(minutes=300)  # burasi max 1000 olmali
+        data = store.getdata(
+            dataname='BTC/USDT',
+            name="BTCUSDT",
+            timeframe=bt.TimeFrame.Minutes,
+            fromdate=hist_start_date,
+            compression=1,
+            ohlcv_limit=99999
+        )
+        cerebro.adddata(data)
+
+        params = {
+            'period': 3,
+            'multiplier': 1.5,
+            'length': 3,
+            'mav': 'ema',
+            'printlog': True,
+        }
+
+        cerebro.addstrategy(PMaxStrategy, **params)
+
+        initial_value = cerebro.broker.getvalue()
+        print('Starting Portfolio Value: %.2f' % initial_value)
+        result = cerebro.run()
+        final_value = cerebro.broker.getvalue()
+        print('Final Portfolio Value: %.2f' % final_value)

@@ -1,0 +1,3 @@
+Strategy	<class 'app.strategies.pmax.PMaxStrategy'>
+params	total_open	total_closed	total_won	total_lost	win_streak	lose_streak	pnl_net	strike_rate	cagr	sharpe	sortino	volatility	avg_win	avg_loss	max_drawdown
+{'period': 10, 'multiplier': 2, 'length': 10, 'mav': 'T3', 'printlog': False}	0	24	9	15	2	4	5.69	37.5	0.9175645646043968	1.3680301763702072	2.3692725789955444	0.3654768570539995	0.018810280515668257	-0.014577617072579903	-0.10677687824949444

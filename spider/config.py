@@ -4,6 +4,7 @@ import os
 class Config:
     pass
     SYMBOL_INTERVAL_PAIRS = (
+        ('BTCUSDT', '1m'),
         ('BTCUSDT', '5m'),
         ('BTCUSDT', '15m'),
         ('BTCUSDT', '30m'),
