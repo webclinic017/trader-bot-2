@@ -8,6 +8,7 @@ from binance.client import Client
 from app.binance.data_collector import DataCollector
 from app.db import ext_db
 from app.optimizer import StrategyOptimizer
+from app.picker import BestParameterPicker
 from app.reporter import Reporter
 from app.strategies.pmax import PMaxStrategy
 
@@ -34,11 +35,17 @@ class Spider:
         interval = Client.KLINE_INTERVAL_15MINUTE
         strategy = PMaxStrategy
         params = {
-            'period': range(10, 15, 10),
-            'multiplier': np.arange(2, 5.1, 0.5),
-            'length': range(10, 21, 2),
-            'mav': 'T3'
+            'period': range(94, 97, 1),
+            'multiplier': np.arange(7.8, 8, 0.1),
+            'length': range(20, 21, 1),
+            'mav': 'sma'
         }
+        # params = {
+        #     'period': 10,
+        #     'multiplier': 3,
+        #     'length': 14,
+        #     'mav': 'T3'
+        # }
         print("Params: " + str(params))
         data = self.data_collector.get_data_frame(symbol=symbol, interval=interval, limit=limit)
         data.index = pd.to_datetime(data.index, unit='s')
@@ -47,14 +54,18 @@ class Spider:
         data.drop(data.tail(1).index, inplace=True)
 
         optimizer = StrategyOptimizer(data, symbol, interval)
-        # result = optimizer.run_single(strategy, params=params, plot=True)
-        # result = optimizer.run_opt(strategy, params=params)
-        result = optimizer.run_opt(strategy, params=params, wfo=True)
+        #result = optimizer.run_single(strategy, params=params, plot=True)
+        result = optimizer.run_opt(strategy, params=params)
+        # result = optimizer.run_opt(strategy, params=params, wfo=True)
 
         reporter = Reporter()
-        report = reporter.report(result, strategy, log=True, csv=True)
+        report_list = reporter.report(result, strategy, log=True, csv=True)
+
+        # sorted(report,)
+        picker = BestParameterPicker()
+        picker.pick(report_list)
+
         self.logger.info("Finished.")
-        exit()
 
     def init_cerebro(self, commission, cash, symbol, interval, limit):
         self.cerebro = bt.Cerebro(optreturn=False, stdstats=True)

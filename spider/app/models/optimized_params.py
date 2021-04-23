@@ -23,8 +23,7 @@ class OptimizedParams(BaseExtModel):
     sharpe = FloatField(null=False)
     sortino = FloatField(null=False)
     volatility = FloatField(null=False)
-    avg_profit_per_trade = FloatField(null=False)
-    avg_loss_per_trade = FloatField(null=False)
+    avg_pnl_per_trade = FloatField(null=False)
     created_at = DateTimeField(null=True, formats='%Y-%m-%d %H:%M:%S.%f', default=datetime.now())
 
     class Meta:
