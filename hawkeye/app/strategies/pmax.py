@@ -3,6 +3,7 @@ from datetime import datetime
 
 import backtrader as bt
 
+from app.deneme import DenemeStore
 from app.indicators.pmax import PMax
 
 
@@ -76,8 +77,11 @@ class PMaxStrategy(bt.Strategy):
             self.log("%s - $%.5f" % (self.status, self.data0.close[0]))
             return
 
+        self.log("market price: %.5f" % (DenemeStore.BTCUSDT_1M_LAT_PRICE))
+
         # Check for open orders
         if self.order:
+            self.log("we have an open order now")
             return
 
         filters = {
@@ -102,23 +106,27 @@ class PMaxStrategy(bt.Strategy):
             }
         }
 
-        price = (self.data.high[0] + self.data.low[0]) / 2
-        size = 0.0005
-        self.log('BUY CREATE {:.5f}@{:.5f}   total: {:.5f}'.format(size, price, size * price))
+        # size = 0.0005
+        # self.log('BUY CREATE {:.5f}@{:.5f}   total: {:.5f}'.format(size, price, size * price))
+        #
+        # # Keep track of the created order to avoid a 2nd order
+        # self.order = self.buy(size=size, price=price)
 
-        # Keep track of the created order to avoid a 2nd order
-        self.order = self.buy(size=size, price=price)
-
-        return
         if self.position:
+            self.log("we are in the position")
+
             if self.signal < 0:
+                price = DenemeStore.BTCUSDT_1M_LAT_PRICE
                 size = 0.0005
                 self.log('SELL CREATE {:.5f}@{:.5f}   total: {:.5f}'.format(size, price, size * price))
                 self.sell()
 
         else:
+            self.log("we are not in the position")
+
             if self.signal > 0:
                 # trading rule: min usdt amount is 10$
+                price = DenemeStore.BTCUSDT_1M_LAT_PRICE
                 size = 0.0005
                 self.log('BUY CREATE {:.5f}@{:.5f}   total: {:.5f}'.format(size, price, size * price))
 

@@ -4,6 +4,7 @@ import pprint
 from binance.enums import *
 from binance.websockets import BinanceSocketManager
 
+from app.models import OptimizedParams
 from app.binance.binclient import BinanceClient
 from app.db import ext_db
 from app.handlers import *
@@ -15,7 +16,7 @@ class Hawkeye:
     KLINE_HANDLERS = {
         "BTCUSDT": {
             KLINE_INTERVAL_1MINUTE: process_kline_1m,
-            KLINE_INTERVAL_5MINUTE: process_kline_5m,
+            # KLINE_INTERVAL_5MINUTE: process_kline_5m,
         }
     }
 
@@ -27,7 +28,7 @@ class Hawkeye:
         ext_db.connection()
         self.init_logging()
 
-    def run(self):
+    def listen(self):
         # get parameters from the table optimized_params
         # test strategy with given params via backtrader
         bin_client = BinanceClient(self._config)
@@ -65,7 +66,7 @@ class Hawkeye:
 
         # program burada neden sonlanmiyor?
 
-    def main2(self):
+    def run(self):
         import backtrader as bt
         from os import environ
         import datetime as dt
@@ -135,14 +136,10 @@ class Hawkeye:
             ohlcv_limit=99999
         )
         cerebro.adddata(data)
+        oparam: OptimizedParams = OptimizedParams.get(OptimizedParams.symbol == "BTCUSDT", OptimizedParams.interval == "15m")
+        params = oparam.parameters
 
-        params = {
-            'period': 3,
-            'multiplier': 1.5,
-            'length': 3,
-            'mav': 'ema',
-            'printlog': True,
-        }
+        params = {"period": 1, "multiplier": 0.5, "length": 1, "mav": "sma", "printlog": True}
 
         cerebro.addstrategy(PMaxStrategy, **params)
 

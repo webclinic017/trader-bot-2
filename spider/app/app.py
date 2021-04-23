@@ -23,7 +23,7 @@ class Spider:
         self.init_logging()
 
     def run(self):
-        self.update_history()
+        # self.update_history()
 
         symbol = 'BTCUSDT'
         # limit = 288  # 1 day (5 min)
@@ -33,10 +33,16 @@ class Spider:
         limit = 2997
         interval = Client.KLINE_INTERVAL_5MINUTE
         strategy = PMaxStrategy
+        # params = {
+        #     'period': range(2, 20, 2),
+        #     'multiplier': np.arange(2, 4.1, 0.1),
+        #     'length': [3, 5, 8, 13, 21, 34, 55],
+        #     'mav': 'EMA'
+        # }
         params = {
-            'period': range(2, 20, 2),
-            'multiplier': np.arange(2, 4.1, 0.1),
-            'length': [3, 5, 8, 13, 21, 34, 55],
+            'period': 10,
+            'multiplier': 3,
+            'length': 10,
             'mav': 'EMA'
         }
         print("Params: " + str(params))
@@ -47,8 +53,8 @@ class Spider:
         data.drop(data.tail(1).index, inplace=True)
 
         optimizer = StrategyOptimizer(data, symbol, interval)
-        # result = optimizer.run_single(strategy, params=params, plot=True)
-        result = optimizer.run_opt(strategy, params=params)
+        result = optimizer.run_single(strategy, params=params, plot=False)
+        # result = optimizer.run_opt(strategy, params=params)
         # result = optimizer.run_opt(strategy, params=params, wfo=True)
 
         reporter = Reporter()

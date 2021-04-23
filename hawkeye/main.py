@@ -10,7 +10,7 @@ if __name__ == '__main__':
     clint = Hawkeye(config=conf)
 
     try:
-        # clint.run()
-        clint.main2()
+        clint.listen()
+        clint.run()
     except KeyboardInterrupt:
         clint.close_connections()

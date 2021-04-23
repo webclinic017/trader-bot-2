@@ -1,13 +1,18 @@
+from app.deneme import DenemeStore
 from app.models.historical_data import HistoricalData
 
 
 def process_kline_1m(msg):
+    # print(msg)
+    DenemeStore.BTCUSDT_1M_LAT_PRICE = float(msg['k']['c'])
+
+
     closed = msg['k']['x']
     kline_data = None
 
-    if closed:
-        kline_data = convert(msg['k'])
-        kline_data.insert()
+    # if closed:
+    #     kline_data = convert(msg['k'])
+    #     kline_data.insert()
 
     if kline_data is not None:
         _postprocess(kline_data.symbol, kline_data.interval)
